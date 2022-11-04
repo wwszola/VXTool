@@ -1,0 +1,13 @@
+{
+    "font_name": "UniVGA16.ttf",
+    "font_size": 16,
+    "antialias": false,
+    "color": [255, 255, 255],
+    "backcolor": [0, 0, 0],
+    "shape": [1, 1],
+    "full_res": [1, 1],
+    "screen_size": [1, 1],
+    "FPS": 1,
+    "record": false,
+    "quit": -1
+}
