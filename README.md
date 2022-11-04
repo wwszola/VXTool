@@ -1,5 +1,5 @@
 # text_render 
-### Single file tool for rendering text-based animation grid.
+### Single file tool for rendering text-based, animated grid.
 Based on PyGame. Recording uses system call `ffmpeg` for stitching frames into video, but it's not needed for rendering.
 
 `py text_render.py template`
