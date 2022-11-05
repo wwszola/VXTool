@@ -48,13 +48,50 @@ class TextRender:
         return (self.shape[0] * self.dot_size[0], self.shape[1] * self.dot_size[1])
 
     def put_line(self, text: str, line_idx: int):
-        assert(len(text) <= self.shape[0])
+        assert(len(text) == self.shape[0])
         assert(0 <= line_idx < self.shape[1])
         line_render = self.font.render(text, self.antialias, self.color)
         rect = self.line_rect(line_idx)
         self.render.fill(self.backcolor, rect)
         self.render.blit(line_render, rect)
+
+    def word_rect(self, length: int, pos: tuple[int, int]) -> Rect:
+        return Rect(pos[0] * self.dot_size[0], pos[1] * self.line_size[1], length * self.dot_size[0], self.line_size[1])
     
+    def put_words(self, text: str, pos: tuple[int, int]) -> str:
+        """render text wrapping lines on the right edge starting at pos
+
+        renders text only up to right-bottom corner
+
+        Parameters:
+        text: str
+        pos: tuple[int, int]
+            row_idx, line_idx
+
+        Returns:
+        str
+            if text doesn't end at right-bottom corner, return what's left
+        """
+        assert 0 <= pos[0] <= self.shape[0]
+        assert 0 <= pos[1] <= self.shape[1] 
+        
+        while len(text) > 0 and pos[1] < self.shape[1]:
+            cut = self.shape[0] - pos[0]
+            word = text[:cut]
+            text = text[cut:]
+
+            word_render = self.font.render(word, self.antialias, self.color)
+            rect = self.word_rect(len(word), pos)
+            self.render.fill(self.backcolor, rect)
+            self.render.blit(word_render, rect)
+
+            if pos[0] + len(word) >= self.shape[0]:
+                pos = (0, pos[1] + 1)
+            else:
+                pos = (pos[0] + len(word), pos[1])
+
+        return text
+
     def img(self) -> Surface:
         return scale(self.render, self.full_res)       
 
@@ -127,7 +164,7 @@ if __name__ == '__main__':
             running = False
             
         frame += 1
-        clock.tick(_SETTINGS['FPS'])
+        # clock.tick(_SETTINGS['FPS'])
 
     if _SETTINGS['record']:
         fps = _SETTINGS['FPS']
