@@ -190,13 +190,20 @@ if __name__ == '__main__':
     pygame.quit()
 
 # Utility functions
-def scroll(text: str, window: int) -> Iterator[str]:
-    """yields views starting from clear window, shifts to left
+def scroll(text: str, window: int, start: int = 0) -> Iterator[str]:
+    """yields views starting from empty view, shifts to left
     returns number of views yield
+
+    Parameters:
+    text: str
+    window: int
+        length of the view
+    start: int = 0
+        pass value < window to start from partially filled view
     """
-    length = 0
     text = ' ' * window + text
-    for pos in range(len(text) - window + 1):
+    length = 0
+    for pos in range(start, len(text) - window + 1):
         yield text[pos: pos + window]
         length += 1
     return length
