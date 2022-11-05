@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from functools import cached_property
 from json import load
-from os import system
 from pathlib import Path
 from sys import argv, path
 from typing import Iterator
@@ -137,44 +136,23 @@ class TextRender:
     def img(self) -> Surface:
         return scale(self.render, self.full_res)       
 
-if __name__ == '__main__':
-    """returns error code
-    0 - Success
-    1 - Couldn't load 'settings.json' file
-    """
-    project_dir: Path = Path(argv[1]) 
-    print(project_dir.as_posix())
-
-    settings = project_dir / 'settings.json'
-    out_dir = project_dir / 'out'
-
-    path.append(project_dir.as_posix())
-    from callback import _callback
-    
-    _SETTINGS: dict = {}
-    with open(settings, 'r') as file:
-        _SETTINGS = load(file)
-    if not _SETTINGS:
-        raise FileNotFoundError('Not found settings.json')
-
-    _TEXT_RENDER_KEYS = set(
-        ['shape', 'full_res', 'color', 'backcolor', 'antialias']
-        )
-    _TEXT_RENDER_SETTINGS = dict(
-        [(k, v) for k, v in _SETTINGS.items() if k in _TEXT_RENDER_KEYS]
-        )
-
+def _app(_SETTINGS: dict):
     pygame.init()
+    screen = pygame.display.set_mode(_SETTINGS['render_size'])
+
     pygame.font.init()
-
-    screen = pygame.display.set_mode(_SETTINGS['screen_size'])
+    font = Font(
+        _SETTINGS['project_dir'] / _SETTINGS['font_name'], 
+        _SETTINGS['font_size']
+        )
+    _SETTINGS['TEXT_RENDER']['font'] = font   
+    design = TextRender(**_SETTINGS['TEXT_RENDER'])
     clock = Clock()
-    font = Font(project_dir / _SETTINGS['font_name'], _SETTINGS['font_size'])
 
-    _TEXT_RENDER_SETTINGS['font'] = font    
-    design = TextRender(**_TEXT_RENDER_SETTINGS)
-
-    action: Iterator[bool] = _callback(design, _SETTINGS)
+    action: Iterator[bool] = _SETTINGS['_callback'](design, _SETTINGS['USER'])
+    
+    record = _SETTINGS.get('record', None)
+    quit = _SETTINGS.get('quit', None)
 
     running = True
     frame = 0
@@ -185,6 +163,8 @@ if __name__ == '__main__':
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q:
                     running = False
+                elif event.key == pygame.K_r:
+                    save(screen, _SETTINGS['out_dir'] / f'frame_{frame:0>5}.png')
 
         if not next(action, False):
             running = False
@@ -199,20 +179,67 @@ if __name__ == '__main__':
 
         pygame.display.update()
 
-        if _SETTINGS['record'] and _SETTINGS['record'][0] <= frame < _SETTINGS['record'][1]:
-            save(screen, out_dir / f'frame_{frame:0>5}.png')
+        if record and record[0] <= frame < record[1]:
+            save(screen, _SETTINGS['out_dir'] / f'frame_{frame:0>5}.png')
 
-        if frame >= _SETTINGS['quit']:
+        if quit and frame >= quit:
             running = False
             
         frame += 1
         clock.tick(_SETTINGS['FPS'])
 
-    if _SETTINGS['record']:
-        fps = _SETTINGS['FPS']
-        system(f'ffmpeg -r {fps} -i ' + (out_dir / f'frame_%05d.png').as_posix() + ' -vcodec mpeg4 -y -r 30  ' + (out_dir / 'movie.mp4').as_posix())
-    
     pygame.quit()
+
+def _main():
+    project_dir: Path = Path(argv[1]) 
+    out_dir = project_dir / 'out'
+    print(project_dir)
+
+    _SETTINGS: dict = {
+        "project_dir": project_dir,
+        "out_dir": out_dir
+    }
+    settings = project_dir / 'settings.json'
+    with open(settings, 'r') as file:
+        _SETTINGS.update(load(file))
+
+    _SETTINGS['TASKS']: dict = {
+        'movie': _movie_task_call
+    }
+    
+    if len(argv) > 2 and argv[2] in _SETTINGS['TASKS'].keys():
+        call = _SETTINGS['TASKS'].get(argv[2], None)
+        if call: call(argv[2:])
+        return 2
+
+    try:
+        path.append(project_dir.as_posix())
+        from callback import _callback
+        assert _callback
+        _SETTINGS['_callback'] = _callback
+    except (ImportError, AssertionError) as e:
+        print(e.msg)
+        return 3
+    
+    _app(_SETTINGS)
+
+    for task in _SETTINGS['end_tasks']:
+        call = _SETTINGS['TASKS'][task]
+        if call: call()
+
+# Tasks
+def _movie_task_str(settings: dict) -> str:
+    """this is ffmpeg sequence that worked for me"""
+    fps = settings['FPS']
+    out_dir = settings['out_dir']
+    return f'ffmpeg -framerate {fps} -i ' + (out_dir / f'frame_%05d.png').as_posix() + '-c:v libx264 -pix_fmt yuv420p -vf scale=out_color_matrix=bt709 -r 30 ' + (out_dir / 'movie.mp4').as_posix()
+
+def _movie_task_call(settings: dict, *args):
+    from os import system
+    system(_movie_task_str())
+
+if __name__ == '__main__':
+    _main()
 
 # Utility functions
 def scroll(text: str, window: int, start: int = 0) -> Iterator[str]:
