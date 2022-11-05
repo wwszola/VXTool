@@ -60,7 +60,7 @@ class TextRender:
         return Rect(pos[0] * self.dot_size[0], pos[1] * self.line_size[1], length * self.dot_size[0], self.line_size[1])
     
     def put_words(self, text: str, pos: tuple[int, int], clear: bool = True) -> str:
-        """render text wrapping lines on the right edge starting at pos
+        """render text wrapping lines starting at pos
 
         renders text only up to right-bottom corner
 
@@ -95,6 +95,31 @@ class TextRender:
                 pos = (pos[0] + len(word), pos[1])
         return text
 
+    @cached_property
+    def grid_rect(self) -> Rect:
+        return Rect((0, 0), self.shape)
+
+    def put_words_bound(self, text: str, region: Rect, clear: bool = True) -> str:
+        assert region.clip(self.grid_rect).size
+        pos = (0, 0)
+        while len(text) > 0 and pos[1] < region.height:
+            cut = region.width - pos[0]
+            word = text[:cut]
+            text = text[cut:]
+
+            word_render = self.font.render(word, self.antialias, self.color)
+            rect = self.word_rect(len(word), (pos[0] + region.left, pos[1] + region.top))
+            if clear:
+                self.render.fill(self.backcolor, rect)
+            self.render.blit(word_render, rect)
+            
+            if pos[0] + len(word) >= region.width:
+                pos = (0, pos[1] + 1)
+            else:
+                pos = (pos[0] + len(word), pos[1])
+        return text
+
+
     def letter_rect(self, pos: tuple[int, int]) -> Rect:
         return Rect(pos[0] * self.dot_size[0], pos[1] * self.line_size[1], self.dot_size[0], self.line_size[1])
 
@@ -104,7 +129,7 @@ class TextRender:
         assert 0 <= pos[1] <= self.shape[1]
 
         letter_render = self.font.render(letter, self.antialias, self.color)
-        rect = self.letter_rect(self, pos)
+        rect = self.letter_rect(pos)
         if clear:
             self.render.fill(self.backcolor, rect)
         self.render.blit(letter_render, rect)
@@ -149,7 +174,7 @@ if __name__ == '__main__':
     _TEXT_RENDER_SETTINGS['font'] = font    
     design = TextRender(**_TEXT_RENDER_SETTINGS)
 
-    action: Iterator[bool] = _callback(design)
+    action: Iterator[bool] = _callback(design, _SETTINGS)
 
     running = True
     frame = 0
