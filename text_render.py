@@ -85,15 +85,29 @@ class TextRender:
 
             word_render = self.font.render(word, self.antialias, self.color)
             rect = self.word_rect(len(word), pos)
-            self.render.fill(self.backcolor, rect)
+            if clear:
+                self.render.fill(self.backcolor, rect)
             self.render.blit(word_render, rect)
-
+            
             if pos[0] + len(word) >= self.shape[0]:
                 pos = (0, pos[1] + 1)
             else:
                 pos = (pos[0] + len(word), pos[1])
-
         return text
+
+    def letter_rect(self, pos: tuple[int, int]) -> Rect:
+        return Rect(pos[0] * self.dot_size[0], pos[1] * self.line_size[1], self.dot_size[0], self.line_size[1])
+
+    def put_letter(self, letter: str, pos: tuple[int, int], clear: bool = True) -> None:
+        assert len(letter) == 1
+        assert 0 <= pos[0] <= self.shape[0]
+        assert 0 <= pos[1] <= self.shape[1]
+
+        letter_render = self.font.render(letter, self.antialias, self.color)
+        rect = self.letter_rect(self, pos)
+        if clear:
+            self.render.fill(self.backcolor, rect)
+        self.render.blit(letter_render, rect)
 
     def img(self) -> Surface:
         return scale(self.render, self.full_res)       
