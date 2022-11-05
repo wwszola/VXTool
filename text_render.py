@@ -47,18 +47,19 @@ class TextRender:
     def full_size(self) -> tuple[int, int]:
         return (self.shape[0] * self.dot_size[0], self.shape[1] * self.dot_size[1])
 
-    def put_line(self, text: str, line_idx: int):
+    def put_line(self, text: str, line_idx: int, clear: bool = True):
         assert(len(text) == self.shape[0])
         assert(0 <= line_idx < self.shape[1])
         line_render = self.font.render(text, self.antialias, self.color)
         rect = self.line_rect(line_idx)
-        self.render.fill(self.backcolor, rect)
+        if clear:
+            self.render.fill(self.backcolor, rect)
         self.render.blit(line_render, rect)
 
     def word_rect(self, length: int, pos: tuple[int, int]) -> Rect:
         return Rect(pos[0] * self.dot_size[0], pos[1] * self.line_size[1], length * self.dot_size[0], self.line_size[1])
     
-    def put_words(self, text: str, pos: tuple[int, int]) -> str:
+    def put_words(self, text: str, pos: tuple[int, int], clear: bool = True) -> str:
         """render text wrapping lines on the right edge starting at pos
 
         renders text only up to right-bottom corner
@@ -67,6 +68,8 @@ class TextRender:
         text: str
         pos: tuple[int, int]
             row_idx, line_idx
+        clear: bool = True
+            if True, fill with self.backcolor before blitting to self.render
 
         Returns:
         str
