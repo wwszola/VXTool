@@ -181,10 +181,22 @@ if __name__ == '__main__':
             running = False
             
         frame += 1
-        # clock.tick(_SETTINGS['FPS'])
+        clock.tick(_SETTINGS['FPS'])
 
     if _SETTINGS['record']:
         fps = _SETTINGS['FPS']
         system(f'ffmpeg -r {fps} -i ' + (out_dir / f'frame_%05d.png').as_posix() + ' -vcodec mpeg4 -y -r 30  ' + (out_dir / 'movie.mp4').as_posix())
     
     pygame.quit()
+
+# Utility functions
+def scroll(text: str, window: int) -> Iterator[str]:
+    """yields views starting from clear window, shifts to left
+    returns number of views yield
+    """
+    length = 0
+    text = ' ' * window + text
+    for pos in range(len(text) - window + 1):
+        yield text[pos: pos + window]
+        length += 1
+    return length
