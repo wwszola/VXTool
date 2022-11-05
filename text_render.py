@@ -259,3 +259,10 @@ def scroll(text: str, window: int, start: int = 0) -> Iterator[str]:
         yield text[pos: pos + window]
         length += 1
     return length
+    
+def reveal(text: str, start: int = 0) -> Iterator[str]:
+    d = len(text)
+    for pos in range(start, d + 1):
+        # yield text[0: pos] + ' ' * (d - pos)
+        yield text[0: pos]
+    return d
