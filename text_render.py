@@ -3,7 +3,7 @@ from functools import cached_property
 from json import load
 from pathlib import Path
 from sys import argv, path
-from typing import Iterator
+from typing import Iterator, Iterable
 
 import pygame
 from pygame import Surface, Rect
@@ -19,11 +19,15 @@ BLACK = (0, 0, 0)
 class TextRender:
     shape: tuple[int, int]
     full_res: tuple[int, int]
+
     font: Font
     color: tuple[int, int, int] = WHITE
     backcolor: tuple[int, int, int] = BLACK
     antialias: bool = True
+    
     render: Surface = field(init = False)
+    buffer: list = field(default_factory = list)
+    buffer_letter: str = field(default = ' ')
 
     def __post_init__(self):
         print('Text Render __post_init__')
@@ -133,6 +137,31 @@ class TextRender:
             self.render.fill(self.backcolor, rect)
         self.render.blit(letter_render, rect)
 
+    def extend_buffer(self, points: Iterable[tuple[int, int]]) -> None:
+        self.buffer.extend(
+            filter(lambda p: self.grid_rect.collidepoint(p), points)
+            )            
+
+    def blit_buffer(self, clear_buffer: bool = True, clear: bool = True) -> None:
+        letter_render = self.font.render(self.buffer_letter, self.antialias, self.color, self.backcolor)
+        blits = [(letter_render, self.letter_rect(p)) for p in self.buffer]
+        if clear:
+            for _, rect in blits: self.render.fill(self.backcolor, rect) 
+        self.render.blits(blits)
+        if clear_buffer:
+            self.buffer.clear()
+    
+    def clear(self, region: Rect = None):
+        if not region:
+            region = self.grid_rect
+        region = Rect(
+            region.left * self.dot_size[0],
+            region.top * self.dot_size[1],
+            region.width * self.dot_size[0],
+            region.height * self.dot_size[1]
+            )
+        self.render.fill(self.backcolor, region)
+
     def img(self) -> Surface:
         return scale(self.render, self.full_res)       
 
@@ -225,18 +254,18 @@ def _main():
 
     for task in _SETTINGS['end_tasks']:
         call = _SETTINGS['TASKS'][task]
-        if call: call()
+        if call: call(_SETTINGS)
 
 # Tasks
 def _movie_task_str(settings: dict) -> str:
     """this is ffmpeg sequence that worked for me"""
     fps = settings['FPS']
     out_dir = settings['out_dir']
-    return f'ffmpeg -framerate {fps} -i ' + (out_dir / f'frame_%05d.png').as_posix() + '-c:v libx264 -pix_fmt yuv420p -vf scale=out_color_matrix=bt709 -r 30 ' + (out_dir / 'movie.mp4').as_posix()
+    return f'ffmpeg -framerate {fps} -i ' + (out_dir / f'frame_%05d.png').as_posix() + ' -c:v libx264 -pix_fmt yuv420p -vf scale=out_color_matrix=bt709 -r 30 ' + (out_dir / 'movie.mp4').as_posix()
 
 def _movie_task_call(settings: dict, *args):
     from os import system
-    system(_movie_task_str())
+    system(_movie_task_str(settings))
 
 if __name__ == '__main__':
     _main()
@@ -259,10 +288,23 @@ def scroll(text: str, window: int, start: int = 0) -> Iterator[str]:
         yield text[pos: pos + window]
         length += 1
     return length
-    
+
 def reveal(text: str, start: int = 0) -> Iterator[str]:
     d = len(text)
     for pos in range(start, d + 1):
         # yield text[0: pos] + ' ' * (d - pos)
         yield text[0: pos]
     return d
+
+def line(p1: tuple[int, int], p2: tuple[int, int]) -> Iterator[tuple[int, int]]:
+    """DDA line generating algorithm"""
+    dx, dy = p2[0] - p1[0], p2[1] - p1[1]
+    if abs(dx) >= abs(dy):
+        step = abs(dx)
+    else:
+        step = abs(dy)
+    dx, dy = dx / step, dy / step
+    x, y = p1[0], p1[1]
+    for _ in range(step + 1):
+        yield round(x), round(y)
+        x, y = x + dx, y + dy
