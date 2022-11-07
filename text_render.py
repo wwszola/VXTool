@@ -137,12 +137,12 @@ class TextRender:
             self.render.fill(self.backcolor, rect)
         self.render.blit(letter_render, rect)
 
-    def extend_buffer(self, points: Iterable[tuple[int, int]]) -> None:
+    def buffer_put(self, points: Iterable[tuple[int, int]]) -> None:
         self.buffer.extend(
             filter(lambda p: self.grid_rect.collidepoint(p), points)
             )            
 
-    def blit_buffer(self, clear_buffer: bool = True, clear: bool = True) -> None:
+    def buffer_blit(self, clear_buffer: bool = True, clear: bool = True) -> None:
         letter_render = self.font.render(self.buffer_letter, self.antialias, self.color, self.backcolor)
         blits = [(letter_render, self.letter_rect(p)) for p in self.buffer]
         if clear:
@@ -296,7 +296,7 @@ def reveal(text: str, start: int = 0) -> Iterator[str]:
         yield text[0: pos]
     return d
 
-def line(p1: tuple[int, int], p2: tuple[int, int]) -> Iterator[tuple[int, int]]:
+def line_seq(p1: tuple[int, int], p2: tuple[int, int]) -> Iterator[tuple[int, int]]:
     """DDA line generating algorithm"""
     dx, dy = p2[0] - p1[0], p2[1] - p1[1]
     if abs(dx) >= abs(dy):
