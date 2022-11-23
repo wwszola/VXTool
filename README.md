@@ -1,5 +1,7 @@
 # text_render 
-### Single file tool for rendering text-based, animated grid.
+## Workflow tool for rendering text-based, animated grid.
+#### This is highly experimental right now. I'v done [some animations](https://www.instagram.com/wwszola_art) to test this. It works but may be not consistent and is not fast at all.
+____
 Based on PyGame. Recording uses system call `ffmpeg` for stitching frames into video, but it's not needed for rendering.
 
 `py text_render.py template`
