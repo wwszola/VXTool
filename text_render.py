@@ -3,7 +3,8 @@ from functools import cached_property
 from json import load
 from pathlib import Path
 from sys import argv, path
-from typing import Iterator, Iterable
+from typing import Iterator, Iterable, Generator
+from math import sqrt, pi, sin, cos
 
 import pygame
 from pygame import Surface, Rect
@@ -51,7 +52,7 @@ class TextRender:
         return (self.shape[0] * self.dot_size[0], self.shape[1] * self.dot_size[1])
 
     def put_line(self, text: str, line_idx: int, clear: bool = True):
-        assert(len(text) == self.shape[0])
+        assert(len(text) <= self.shape[0])
         assert(0 <= line_idx < self.shape[1])
         line_render = self.font.render(text, self.antialias, self.color)
         rect = self.line_rect(line_idx)
@@ -107,16 +108,21 @@ class TextRender:
         pos = (0, 0)
         while len(text) > 0 and pos[1] < region.height:
             cut = region.width - pos[0]
-            word = text[:cut]
-            text = text[cut:]
-
+            idx = text.find('\n', 0, cut)
+            if idx != -1:
+                word = text[:idx]
+                text = text[idx + 1:]
+            else:
+                word = text[:cut]
+                text = text[cut:]
+            
             word_render = self.font.render(word, self.antialias, self.color)
             rect = self.word_rect(len(word), (pos[0] + region.left, pos[1] + region.top))
             if clear:
                 self.render.fill(self.backcolor, rect)
             self.render.blit(word_render, rect)
             
-            if pos[0] + len(word) >= region.width:
+            if pos[0] + len(word) >= region.width or idx != -1:
                 pos = (0, pos[1] + 1)
             else:
                 pos = (pos[0] + len(word), pos[1])
@@ -127,9 +133,8 @@ class TextRender:
         return Rect(pos[0] * self.dot_size[0], pos[1] * self.line_size[1], self.dot_size[0], self.line_size[1])
 
     def put_letter(self, letter: str, pos: tuple[int, int], clear: bool = True) -> None:
-        assert len(letter) == 1
-        assert 0 <= pos[0] <= self.shape[0]
-        assert 0 <= pos[1] <= self.shape[1]
+        if not self.grid_rect.collidepoint(pos):
+            return
 
         letter_render = self.font.render(letter, self.antialias, self.color)
         rect = self.letter_rect(pos)
@@ -143,7 +148,7 @@ class TextRender:
             )            
 
     def buffer_blit(self, clear_buffer: bool = True, clear: bool = True) -> None:
-        letter_render = self.font.render(self.buffer_letter, self.antialias, self.color, self.backcolor)
+        letter_render = self.font.render(self.buffer_letter, self.antialias, self.color)
         blits = [(letter_render, self.letter_rect(p)) for p in self.buffer]
         if clear:
             for _, rect in blits: self.render.fill(self.backcolor, rect) 
@@ -166,12 +171,15 @@ class TextRender:
         return scale(self.render, self.full_res)       
 
 def _app(_SETTINGS: dict):
+    project_dir = _SETTINGS['USER']['project_dir']
+    out_dir = _SETTINGS['USER']['out_dir']
+
     pygame.init()
     screen = pygame.display.set_mode(_SETTINGS['render_size'])
 
     pygame.font.init()
     font = Font(
-        _SETTINGS['project_dir'] / _SETTINGS['font_name'], 
+        project_dir / _SETTINGS['font_name'], 
         _SETTINGS['font_size']
         )
     _SETTINGS['TEXT_RENDER']['font'] = font   
@@ -193,7 +201,7 @@ def _app(_SETTINGS: dict):
                 if event.key == pygame.K_q:
                     running = False
                 elif event.key == pygame.K_r:
-                    save(screen, _SETTINGS['out_dir'] / f'frame_{frame:0>5}.png')
+                    save(screen, _SETTINGS['USER']['out_dir'] / f'frame_{frame:0>5}.png')
 
         if not next(action, False):
             running = False
@@ -209,13 +217,14 @@ def _app(_SETTINGS: dict):
         pygame.display.update()
 
         if record and record[0] <= frame < record[1]:
-            save(screen, _SETTINGS['out_dir'] / f'frame_{frame:0>5}.png')
+            save(screen, _SETTINGS['USER']['out_dir'] / f'frame_{frame:0>5}.png')
 
         if quit and frame >= quit:
             running = False
             
         frame += 1
-        clock.tick(_SETTINGS['FPS'])
+        real_fps = 1000/clock.tick(_SETTINGS['FPS'])
+        pygame.display.set_caption(f'{real_fps:.2}')
 
     pygame.quit()
 
@@ -225,12 +234,16 @@ def _main():
     print(project_dir)
 
     _SETTINGS: dict = {
-        "project_dir": project_dir,
-        "out_dir": out_dir
+        "USER": {
+            "project_dir": project_dir,
+            "out_dir": out_dir
+        }
     }
     settings = project_dir / 'settings.json'
     with open(settings, 'r') as file:
-        _SETTINGS.update(load(file))
+        data = load(file)
+        data['USER'].update(_SETTINGS['USER'])
+        _SETTINGS.update(data)
 
     _SETTINGS['TASKS']: dict = {
         'movie': _movie_task_call
@@ -238,7 +251,7 @@ def _main():
     
     if len(argv) > 2 and argv[2] in _SETTINGS['TASKS'].keys():
         call = _SETTINGS['TASKS'].get(argv[2], None)
-        if call: call(argv[2:])
+        if call: call(_SETTINGS)
         return 2
 
     try:
@@ -260,10 +273,11 @@ def _main():
 def _movie_task_str(settings: dict) -> str:
     """this is ffmpeg sequence that worked for me"""
     fps = settings['FPS']
-    out_dir = settings['out_dir']
+    out_dir = settings['USER']['out_dir']
     return f'ffmpeg -framerate {fps} -i ' + (out_dir / f'frame_%05d.png').as_posix() + ' -c:v libx264 -pix_fmt yuv420p -vf scale=out_color_matrix=bt709 -r 30 ' + (out_dir / 'movie.mp4').as_posix()
 
 def _movie_task_call(settings: dict, *args):
+    print(settings)
     from os import system
     system(_movie_task_str(settings))
 
@@ -296,15 +310,70 @@ def reveal(text: str, start: int = 0) -> Iterator[str]:
         yield text[0: pos]
     return d
 
-def line_seq(p1: tuple[int, int], p2: tuple[int, int]) -> Iterator[tuple[int, int]]:
+def line_seq(p1: tuple[float, float], p2: tuple[float, float]) -> Generator:
     """DDA line generating algorithm"""
     dx, dy = p2[0] - p1[0], p2[1] - p1[1]
     if abs(dx) >= abs(dy):
         step = abs(dx)
     else:
         step = abs(dy)
-    dx, dy = dx / step, dy / step
-    x, y = p1[0], p1[1]
-    for _ in range(step + 1):
-        yield round(x), round(y)
-        x, y = x + dx, y + dy
+    
+    if step <= 1e-16:
+        yield round(p1[0]), round(p1[1])
+    else:
+        dx, dy = dx / step, dy / step
+        for i in range(round(step) + 1):
+            x = p1[0] + i * dx
+            y = p1[1] + i * dy
+            yield round(x), round(y)
+
+def grid_seq(shape: tuple[int, int], origin: tuple[int, int] = (0, 0)) -> Generator:
+    for y in range(origin[1], origin[1] + shape[1]):
+        for x in range(origin[0], origin[0] + shape[0]):
+            yield (x, y)
+
+def circle_seq(center: tuple[int, int], radius: int) -> Generator:
+    def ends(half_chord: float):
+        x_left = round(center[0] - half_chord)
+        x_right = round(center[0] + half_chord)
+        return x_left, x_right
+
+    center = round(center[0]), round(center[1])
+    radius = radius
+    r_sq = radius ** 2
+    caps_r = 0
+    for d in range(1, radius):
+        half_chord = sqrt(r_sq - d**2)
+        x_left, x_right = ends(half_chord)
+        for y in (center[1] - d, center[1] + d):
+            yield from line_seq((x_left, y), (x_right, y))
+        
+        if x_right - x_left == 2 * radius:
+            caps_r += 1
+
+    x_left, x_right = ends(caps_r)
+    for y in (center[1] - radius, center[1] + radius):
+        yield from line_seq((x_left, y), (x_right, y))
+
+    x_left, x_right = ends(radius)
+    y = center[1]
+    yield from line_seq((x_left, y), (x_right, y))
+
+
+def polygon_seq(n: int, center: tuple[int, int], radius: int, offset: float = 0.0) -> Generator:
+    if n < 1:
+        return None
+    elif n == 1:
+        yield center
+    else:
+        da = 2 * pi / n
+        vert_x = lambda angle: int(sin(angle) * radius) + center[0]
+        vert_y = lambda angle: int(cos(angle) * radius) + center[1]
+        prev = vert_x(offset), vert_y(offset)
+        first = prev
+        for vert in range(1, n):
+            angle = offset + vert * da
+            pos = vert_x(angle), vert_y(angle)
+            yield from line_seq(prev, pos)
+            prev = pos
+        yield from line_seq(pos, first)
