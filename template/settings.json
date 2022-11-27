@@ -1,23 +1,25 @@
 {
     "TEXT_RENDER": {
-        "shape": [6, 3],
-        "full_res": [320, 320],
-        "color": [0, 255, 0],
-        "backcolor": [63, 63, 63],
-        "antialias": false
+        "shape": [11, 11],
+        "full_res": [540, 540],
+        "backcolor": [165, 128, 165],
+        "block_size": false
     },
 
-    "font_name": "UniVGA16.ttf",
-    "font_size": 16,
-
-    "backcolor": [0, 0, 0],
-    "render_size": [540, 540],
-    "FPS": 30,
-    "quit": 300,
-    "record": [-1, -1],
-
-    "end_tasks": [],
+    "APP": {
+        "preload_fonts": {
+            "UniVGA16": ["UniVGA16.ttf", 16]
+        },
+        "backcolor": [165, 128, 165],
+        "render_size": [540, 540],
+        "FPS": 30,
+        "quit": false,
+        "record": [-1, -1],
+        "end_tasks": []
+    
+    },
 
     "USER": {
+        
     }
 }
