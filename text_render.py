@@ -3,8 +3,10 @@ from functools import cached_property
 from json import load
 from pathlib import Path
 from sys import argv, path
-from typing import Iterator, Iterable, Generator
+from typing import Iterator, Generator
+from dataclasses import dataclass
 from math import sqrt, pi, sin, cos
+from copy import copy
 
 import pygame
 from pygame import Surface, Rect
@@ -13,183 +15,147 @@ from pygame.transform import scale
 from pygame.time import Clock
 from pygame.image import save
 
+COLOR = tuple[int, int, int]
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+
+@dataclass(eq = True, frozen = True)
+class Dot():
+    pos: tuple[int, int] = field(default = None, hash = False, compare = False)
+    
+    letter: str = None
+    color: COLOR = None
+    font: Font | None = None
+    clear: bool = False
+
+    @property
+    def size(self):
+        return self.font.size(self.letter)
+
+    def variant(self, **kwargs):
+        attrs = copy(self.__dict__)
+        attrs.update(kwargs)
+        return Dot(**attrs)
+
+@dataclass()
+class Buffer():
+    pos_to_dots: dict[tuple[int, int], list[Dot]] = field(default_factory = dict)
+
+    def put(self, dot: Dot):
+        local: list[Dot] = self.pos_to_dots.setdefault(dot.pos, [])
+        if dot.clear:
+            self.pos_to_dots[dot.pos] = [dot]
+        else:
+            try:
+                local.remove(dot)
+            except ValueError:
+                pass
+            finally:
+               local.append(dot)
+
+    def extend(self, dots: Iterator[Dot]):
+        for dot in dots:
+            self.put(dot)
+
+    def erase(self, dot: Dot):
+        local = self.pos_to_dots[dot.pos]
+        local.remove(dot)
 
 @dataclass
 class TextRender:
     shape: tuple[int, int]
     full_res: tuple[int, int]
+    block_size: tuple[int, int] = None
 
-    font: Font
-    color: tuple[int, int, int] = WHITE
-    backcolor: tuple[int, int, int] = BLACK
-    antialias: bool = True
+    backcolor: COLOR = BLACK
     
-    render: Surface = field(init = False)
-    buffer: list = field(default_factory = list)
-    buffer_letter: str = field(default = ' ')
+    cached_renders: dict[Dot, Surface] = field(default_factory = dict, kw_only = True)
+    _screen: Surface = field(init = False)
 
     def __post_init__(self):
-        print('Text Render __post_init__')
-        print(self.dot_size, self.line_size, self.full_size)
-        self.render: Surface = Surface(self.full_size, depth = 24)
-        self.render.fill(self.backcolor)
+        if self.block_size:
+            self.resize_screen()
 
-    @cached_property
-    def dot_size(self) -> tuple[int, int]:
-        return self.font.size('█')
-
-    @cached_property
-    def line_size(self) -> tuple[int, int]:
-        return (self.shape[0] * self.dot_size[0], self.dot_size[1])
-
-    def line_rect(self, idx: int) -> Rect:
-        return Rect(0, idx * self.line_size[1], self.line_size[0], self.line_size[1])
-
-    @cached_property
+    @property
     def full_size(self) -> tuple[int, int]:
-        return (self.shape[0] * self.dot_size[0], self.shape[1] * self.dot_size[1])
+        return (self.shape[0] * self.block_size[0], self.shape[1] * self.block_size[1])
 
-    def put_line(self, text: str, line_idx: int, clear: bool = True):
-        assert(len(text) <= self.shape[0])
-        assert(0 <= line_idx < self.shape[1])
-        line_render = self.font.render(text, self.antialias, self.color)
-        rect = self.line_rect(line_idx)
-        if clear:
-            self.render.fill(self.backcolor, rect)
-        self.render.blit(line_render, rect)
+    def resize_screen(self):
+        print(f'Block size: {self.block_size} Full size: {self.full_size}')
+        self.screen = Surface(self.full_size, pygame.SRCALPHA, 32)
+        empty_block = Surface(self.block_size, pygame.SRCALPHA, 32)
+        empty_block.fill(self.backcolor)
+        self.cached_renders['_EMPTY'] = empty_block
 
-    def word_rect(self, length: int, pos: tuple[int, int]) -> Rect:
-        return Rect(pos[0] * self.dot_size[0], pos[1] * self.line_size[1], length * self.dot_size[0], self.line_size[1])
-    
-    def put_words(self, text: str, pos: tuple[int, int], clear: bool = True) -> str:
-        """render text wrapping lines starting at pos
-
-        renders text only up to right-bottom corner
-
-        Parameters:
-        text: str
-        pos: tuple[int, int]
-            row_idx, line_idx
-        clear: bool = True
-            if True, fill with self.backcolor before blitting to self.render
-
-        Returns:
-        str
-            if text doesn't end at right-bottom corner, return what's left
-        """
-        assert 0 <= pos[0] <= self.shape[0]
-        assert 0 <= pos[1] <= self.shape[1] 
-        
-        while len(text) > 0 and pos[1] < self.shape[1]:
-            cut = self.shape[0] - pos[0]
-            word = text[:cut]
-            text = text[cut:]
-
-            word_render = self.font.render(word, self.antialias, self.color)
-            rect = self.word_rect(len(word), pos)
-            if clear:
-                self.render.fill(self.backcolor, rect)
-            self.render.blit(word_render, rect)
-            
-            if pos[0] + len(word) >= self.shape[0]:
-                pos = (0, pos[1] + 1)
-            else:
-                pos = (pos[0] + len(word), pos[1])
-        return text
+    def block_rect(self, pos: tuple[int, int]) -> Rect:
+        return Rect(
+            (pos[0] * self.block_size[0], pos[1] * self.block_size[1]),
+            self.block_size
+        )
 
     @cached_property
     def grid_rect(self) -> Rect:
         return Rect((0, 0), self.shape)
 
-    def put_words_bound(self, text: str, region: Rect, clear: bool = True) -> str:
-        assert region.clip(self.grid_rect).size
-        pos = (0, 0)
-        while len(text) > 0 and pos[1] < region.height:
-            cut = region.width - pos[0]
-            idx = text.find('\n', 0, cut)
-            if idx != -1:
-                word = text[:idx]
-                text = text[idx + 1:]
-            else:
-                word = text[:cut]
-                text = text[cut:]
-            
-            word_render = self.font.render(word, self.antialias, self.color)
-            rect = self.word_rect(len(word), (pos[0] + region.left, pos[1] + region.top))
-            if clear:
-                self.render.fill(self.backcolor, rect)
-            self.render.blit(word_render, rect)
-            
-            if pos[0] + len(word) >= region.width or idx != -1:
-                pos = (0, pos[1] + 1)
-            else:
-                pos = (pos[0] + len(word), pos[1])
-        return text
+    def _get_render(self, dot: Dot) -> Surface:
+        dot_render = self.cached_renders.get(dot, None)
+        if not dot_render:
+            dot_render = dot.font.render(dot.letter, False, dot.color)
+            dot_render = dot_render.convert_alpha()
+            self.cached_renders[dot] = dot_render
+        return self.cached_renders[dot]
 
-
-    def letter_rect(self, pos: tuple[int, int]) -> Rect:
-        return Rect(pos[0] * self.dot_size[0], pos[1] * self.line_size[1], self.dot_size[0], self.line_size[1])
-
-    def put_letter(self, letter: str, pos: tuple[int, int], clear: bool = True) -> None:
-        if not self.grid_rect.collidepoint(pos):
-            return
-
-        letter_render = self.font.render(letter, self.antialias, self.color)
-        rect = self.letter_rect(pos)
-        if clear:
-            self.render.fill(self.backcolor, rect)
-        self.render.blit(letter_render, rect)
-
-    def buffer_put(self, points: Iterable[tuple[int, int]]) -> None:
-        self.buffer.extend(
-            filter(lambda p: self.grid_rect.collidepoint(p), points)
-            )            
-
-    def buffer_blit(self, clear_buffer: bool = True, clear: bool = True) -> None:
-        letter_render = self.font.render(self.buffer_letter, self.antialias, self.color)
-        blits = [(letter_render, self.letter_rect(p)) for p in self.buffer]
-        if clear:
-            for _, rect in blits: self.render.fill(self.backcolor, rect) 
-        self.render.blits(blits)
-        if clear_buffer:
-            self.buffer.clear()
+    def draw(self, buffer: Buffer):
+        blits = []
+        for pos, dots in buffer.pos_to_dots.items():
+            rect = self.block_rect(pos)
+            for dot in dots:
+                dot_render = self._get_render(dot)
+                if dot.clear:
+                    blits.append((self.cached_renders['_EMPTY'], rect))
+                blits.append((dot_render, rect))
+        self.screen.blits(blits)
     
     def clear(self, region: Rect = None):
         if not region:
             region = self.grid_rect
         region = Rect(
-            region.left * self.dot_size[0],
-            region.top * self.dot_size[1],
-            region.width * self.dot_size[0],
-            region.height * self.dot_size[1]
-            )
-        self.render.fill(self.backcolor, region)
+            region.left * self.block_size[0],
+            region.top * self.block_size[1],
+            region.width * self.block_size[0],
+            region.height * self.block_size[1]
+        )
+        self.screen.fill(self.backcolor, region)
 
     def img(self) -> Surface:
-        return scale(self.render, self.full_res)       
+        return scale(self.screen, self.full_res)       
 
+    
 def _app(_SETTINGS: dict):
     project_dir = _SETTINGS['USER']['project_dir']
     out_dir = _SETTINGS['USER']['out_dir']
 
     pygame.init()
-    screen = pygame.display.set_mode(_SETTINGS['render_size'])
+    screen = pygame.display.set_mode(_SETTINGS['APP']['render_size'])
 
     pygame.font.init()
-    font = Font(
-        project_dir / _SETTINGS['font_name'], 
-        _SETTINGS['font_size']
-        )
-    _SETTINGS['TEXT_RENDER']['font'] = font   
+    for name, data in _SETTINGS['APP']['preload_fonts'].items():
+        path = data[0]
+        family = _SETTINGS['USER']['fonts'][name] = {}
+        try: 
+            for size in data[1:]:
+                font = Font(project_dir / path, size)
+                family[size] = font            
+        except FileNotFoundError as e:
+            print(e.msg)
+
     design = TextRender(**_SETTINGS['TEXT_RENDER'])
+    action: Iterator[bool] = _SETTINGS['APP']['_callback'](design, _SETTINGS['USER'])
+
     clock = Clock()
 
-    action: Iterator[bool] = _SETTINGS['_callback'](design, _SETTINGS['USER'])
-    
-    record = _SETTINGS.get('record', None)
-    quit = _SETTINGS.get('quit', None)
+    record = _SETTINGS['APP'].get('record', None)
+    quit = _SETTINGS['APP'].get('quit', None)
 
     running = True
     frame = 0
@@ -201,7 +167,7 @@ def _app(_SETTINGS: dict):
                 if event.key == pygame.K_q:
                     running = False
                 elif event.key == pygame.K_r:
-                    save(screen, _SETTINGS['USER']['out_dir'] / f'frame_{frame:0>5}.png')
+                    save(screen, out_dir / f'frame_{frame:0>5}.png')
 
         if not next(action, False):
             running = False
@@ -209,7 +175,7 @@ def _app(_SETTINGS: dict):
 
         render = design.img()
         
-        screen.fill(_SETTINGS['backcolor'])
+        screen.fill(_SETTINGS['APP']['backcolor'])
         screen.blit(
             render,
             render.get_rect(center = screen.get_rect().center))
@@ -217,13 +183,13 @@ def _app(_SETTINGS: dict):
         pygame.display.update()
 
         if record and record[0] <= frame < record[1]:
-            save(screen, _SETTINGS['USER']['out_dir'] / f'frame_{frame:0>5}.png')
+            save(screen, out_dir / f'frame_{frame:0>5}.png')
 
         if quit and frame >= quit:
             running = False
             
         frame += 1
-        real_fps = 1000/clock.tick(_SETTINGS['FPS'])
+        real_fps = 1000/clock.tick(_SETTINGS['APP']['FPS'])
         pygame.display.set_caption(f'{real_fps:.2}')
 
     pygame.quit()
@@ -235,6 +201,7 @@ def _main():
 
     _SETTINGS: dict = {
         "USER": {
+            "fonts": {},
             "project_dir": project_dir,
             "out_dir": out_dir
         }
@@ -258,26 +225,25 @@ def _main():
         path.append(project_dir.as_posix())
         from callback import _callback
         assert _callback
-        _SETTINGS['_callback'] = _callback
+        _SETTINGS['APP']['_callback'] = _callback
     except (ImportError, AssertionError) as e:
         print(e.msg)
         return 3
     
     _app(_SETTINGS)
 
-    for task in _SETTINGS['end_tasks']:
+    for task in _SETTINGS['APP']['end_tasks']:
         call = _SETTINGS['TASKS'][task]
         if call: call(_SETTINGS)
 
 # Tasks
 def _movie_task_str(settings: dict) -> str:
     """this is ffmpeg sequence that worked for me"""
-    fps = settings['FPS']
+    fps = settings['APP']['FPS']
     out_dir = settings['USER']['out_dir']
     return f'ffmpeg -framerate {fps} -i ' + (out_dir / f'frame_%05d.png').as_posix() + ' -c:v libx264 -pix_fmt yuv420p -vf scale=out_color_matrix=bt709 -r 30 ' + (out_dir / 'movie.mp4').as_posix()
 
 def _movie_task_call(settings: dict, *args):
-    print(settings)
     from os import system
     system(_movie_task_str(settings))
 
