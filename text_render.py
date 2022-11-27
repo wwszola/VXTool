@@ -25,17 +25,20 @@ class Dot():
     
     letter: str = None
     color: COLOR = None
+    backcolor: COLOR = None
     font: Font | None = None
-    clear: bool = False
+    clear: bool = True
 
     @property
     def size(self):
         return self.font.size(self.letter)
 
+    @property
     def variant(self, **kwargs):
         attrs = copy(self.__dict__)
         attrs.update(kwargs)
         return Dot(**attrs)
+
 
 @dataclass()
 class Buffer():
@@ -43,7 +46,7 @@ class Buffer():
 
     def put(self, dot: Dot):
         local: list[Dot] = self.pos_to_dots.setdefault(dot.pos, [])
-        if dot.clear:
+        if dot.clear or dot.backcolor is not None:
             self.pos_to_dots[dot.pos] = [dot]
         else:
             try:
@@ -100,7 +103,10 @@ class TextRender:
     def _get_render(self, dot: Dot) -> Surface:
         dot_render = self.cached_renders.get(dot, None)
         if not dot_render:
-            dot_render = dot.font.render(dot.letter, False, dot.color)
+            backcolor = dot.backcolor 
+            if dot.clear and backcolor is None:
+                backcolor = self.backcolor
+            dot_render = dot.font.render(dot.letter, False, dot.color, backcolor)
             dot_render = dot_render.convert_alpha()
             self.cached_renders[dot] = dot_render
         return self.cached_renders[dot]
@@ -111,8 +117,6 @@ class TextRender:
             rect = self.block_rect(pos)
             for dot in dots:
                 dot_render = self._get_render(dot)
-                if dot.clear:
-                    blits.append((self.cached_renders['_EMPTY'], rect))
                 blits.append((dot_render, rect))
         self.screen.blits(blits)
     

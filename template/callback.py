@@ -12,7 +12,8 @@ def _callback(design: TextRender, user_settings: dict) -> Iterator[bool]:
     UniVGA16: Font = user_settings['fonts']['UniVGA16'][16]
     base_dot: Dot = Dot(
         pos = (-1, -1), 
-        letter = '█', color = (100, 70, 140), 
+        letter = '█', 
+        color = (100, 70, 140), backcolor = (130, 50, 90), 
         font = UniVGA16, clear = True)
     
     # two lines below are required before drawing anything on design
