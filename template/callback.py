@@ -1,13 +1,15 @@
-from typing import Iterator
+from typing import Generator
 
 from text_render import TextRender, Buffer, Dot
 from text_render import Font
 from text_render import line_seq
+from pygame import KEYDOWN, K_1, K_2, K_3
 
-def _callback(design: TextRender, user_settings: dict) -> Iterator[bool]:
+def _callback(design: TextRender, user_settings: dict) -> Generator:
     """entry point
-    mark end of the each frame with yield True
-    return None or yield False to quit
+    first mark end of your setup with yield True
+    then mark end of the each frame with yield True
+    yield False to quit
     """
     UniVGA16: Font = user_settings['fonts']['UniVGA16'][16]
     base_dot: Dot = Dot(
@@ -31,10 +33,14 @@ def _callback(design: TextRender, user_settings: dict) -> Iterator[bool]:
     dots = (base_dot.variant(letter = letter, pos = pos) for letter, pos in zip(text, line))
     layer1.extend(dots)
 
-    # this line does only drawing in here
-    design.draw(layer1)
+    events = yield False
 
+    # your draw loop
     while True:
-        yield True
+        design.clear()
 
-    return None
+        design.draw(layer1)
+
+        events = yield True
+
+    yield False

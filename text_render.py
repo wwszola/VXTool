@@ -14,6 +14,7 @@ from pygame.font import Font
 from pygame.transform import scale
 from pygame.time import Clock
 from pygame.image import save
+from pygame import QUIT, KEYDOWN, KEYUP, K_q, K_s
 
 COLOR = tuple[int, int, int]
 WHITE = (255, 255, 255)
@@ -33,7 +34,6 @@ class Dot():
     def size(self):
         return self.font.size(self.letter)
 
-    @property
     def variant(self, **kwargs):
         attrs = copy(self.__dict__)
         attrs.update(kwargs)
@@ -154,26 +154,35 @@ def _app(_SETTINGS: dict):
             print(e.msg)
 
     design = TextRender(**_SETTINGS['TEXT_RENDER'])
-    action: Iterator[bool] = _SETTINGS['APP']['_callback'](design, _SETTINGS['USER'])
+    action: Generator = _SETTINGS['APP']['_callback'](design, _SETTINGS['USER'])
+    running = action.send(None)
 
     clock = Clock()
 
     record = _SETTINGS['APP'].get('record', None)
     quit = _SETTINGS['APP'].get('quit', None)
 
-    running = True
     frame = 0
     while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_q:
+        if pygame.event.get(pygame.QUIT):
+            running = False
+            break
+
+        key_events = pygame.event.get((pygame.KEYDOWN, pygame.KEYUP), pump = True)
+        captured = filter(
+            lambda event: event.key in (pygame.K_q, pygame.K_s), 
+            key_events
+        )
+        for event in captured:
+            match (event.type, event.key):
+                case pygame.KEYDOWN, pygame.K_q:
                     running = False
-                elif event.key == pygame.K_r:
+                    break
+                case pygame.KEYDOWN, pygame.K_s:
                     save(screen, out_dir / f'frame_{frame:0>5}.png')
 
-        if not next(action, False):
+        result = action.send(key_events)
+        if not result:
             running = False
             break
 
