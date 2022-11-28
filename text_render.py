@@ -26,7 +26,7 @@ class Dot():
     
     letter: str = None
     color: COLOR = None
-    backcolor: COLOR = None
+    backcolor: COLOR = field(default = None, kw_only = True)
     font: Font | None = None
     clear: bool = True
 
@@ -34,6 +34,13 @@ class Dot():
     def size(self):
         return self.font.size(self.letter)
 
+    @property
+    def rect(self) -> Rect:
+        return Rect((0, 0), self.size)
+
+    def get_global_rect(self, block_size: tuple[int, int]) -> Rect:
+        rect = self.rect
+        
     def variant(self, **kwargs):
         attrs = copy(self.__dict__)
         attrs.update(kwargs)
@@ -103,21 +110,32 @@ class TextRender:
     def _get_render(self, dot: Dot) -> Surface:
         dot_render = self.cached_renders.get(dot, None)
         if not dot_render:
+            block_render = Surface(self.block_size, pygame.SRCALPHA, 32)
+
             backcolor = dot.backcolor 
-            if dot.clear and backcolor is None:
+            if not dot.clear and not dot.backcolor:
+                backcolor = (0, 0, 0, 0)
+            if dot.clear and not dot.backcolor:
                 backcolor = self.backcolor
-            dot_render = dot.font.render(dot.letter, False, dot.color, backcolor)
-            dot_render = dot_render.convert_alpha()
-            self.cached_renders[dot] = dot_render
+
+            block_render.fill(backcolor)            
+            dot_render = dot.font.render(dot.letter, False, dot.color)
+            rect = dot_render.get_rect(center = block_render.get_rect().center)
+            block_render.blit(dot_render, rect)
+            
+            block_render = block_render.convert_alpha()
+            self.cached_renders[dot] = block_render
+        
         return self.cached_renders[dot]
 
     def draw(self, buffer: Buffer):
         blits = []
         for pos, dots in buffer.pos_to_dots.items():
-            rect = self.block_rect(pos)
+            design_block = self.block_rect(pos)
             for dot in dots:
                 dot_render = self._get_render(dot)
-                blits.append((dot_render, rect))
+                # rect = dot_render.get_rect(center = design_block.center)
+                blits.append((dot_render, design_block))
         self.screen.blits(blits)
     
     def clear(self, region: Rect = None):
