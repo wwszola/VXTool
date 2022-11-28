@@ -33,7 +33,7 @@ def _callback(design: TextRender, user_settings: dict) -> Generator:
     dots = (base_dot.variant(letter = letter, pos = pos) for letter, pos in zip(text, line))
     layer1.extend(dots)
 
-    events = yield False
+    events = yield True
 
     # your draw loop
     while True:
