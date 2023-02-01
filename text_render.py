@@ -38,9 +38,6 @@ class Dot():
     def rect(self) -> Rect:
         return Rect((0, 0), self.size)
 
-    def get_global_rect(self, block_size: tuple[int, int]) -> Rect:
-        rect = self.rect
-        
     def variant(self, **kwargs):
         attrs = copy(self.__dict__)
         attrs.update(kwargs)
@@ -49,12 +46,12 @@ class Dot():
 
 @dataclass()
 class Buffer():
-    pos_to_dots: dict[tuple[int, int], list[Dot]] = field(default_factory = dict)
-
+    _container: dict[tuple[int, int], list[Dot]] = field(default_factory = dict)
+    
     def put(self, dot: Dot):
-        local: list[Dot] = self.pos_to_dots.setdefault(dot.pos, [])
+        local: list[Dot] = self._container.setdefault(dot.pos, [])
         if dot.clear or dot.backcolor is not None:
-            self.pos_to_dots[dot.pos] = [dot]
+            local.append(dot)
         else:
             try:
                 local.remove(dot)
@@ -68,8 +65,54 @@ class Buffer():
             self.put(dot)
 
     def erase(self, dot: Dot):
-        local = self.pos_to_dots[dot.pos]
-        local.remove(dot)
+        try:
+            local = self._container[dot.pos]
+            local.remove(dot)
+            if len(local) == 0:
+                del self._container[dot.pos]
+        except (KeyError, ValueError):
+            pass
+    
+    def erase_at(self, pos: tuple[int, int], idx: int = -1):
+        try:
+            local = self._container[pos]
+            local.pop(idx)
+            if len(local) == 0:
+                del self._container[pos]
+        except (KeyError, IndexError):
+            pass
+
+    def clear(self):
+        self._container.clear()
+
+    def merge(self, other):
+        for dots in other._container.values():
+            self.extend(dots)
+        # self.extend(chain(other._container.values()))
+
+    def edit_inp(self, pos: tuple[int, int], idx: int = -1, **kwargs):
+        try:
+            local = self._container[pos]
+            old_dot = local.pop(idx)
+            if 'pos' in list(kwargs.keys()):
+                del kwargs[pos]
+            new_dot = old_dot.variant(**kwargs)
+            local.insert(idx, new_dot)
+        except (KeyError, IndexError):
+            pass
+    
+    def dot_seq(self) -> Generator:
+        for pos, dots in self._container.items():
+            yield from dots
+
+    @staticmethod
+    def from_dot_seq(dots):
+        buffer = Buffer()
+        buffer.extend(dots)
+        return buffer
+
+    def mask(self):
+        yield from self._container.keys()
 
 @dataclass
 class TextRender:
@@ -130,7 +173,7 @@ class TextRender:
 
     def draw(self, buffer: Buffer):
         blits = []
-        for pos, dots in buffer.pos_to_dots.items():
+        for pos, dots in buffer.container.items():
             design_block = self.block_rect(pos)
             for dot in dots:
                 dot_render = self._get_render(dot)
@@ -158,7 +201,8 @@ def _app(_SETTINGS: dict):
     out_dir = _SETTINGS['USER']['out_dir']
 
     pygame.init()
-    screen = pygame.display.set_mode(_SETTINGS['APP']['render_size'])
+    render_size = _SETTINGS['APP']['render_size']
+    screen = pygame.display.set_mode(render_size)
 
     pygame.font.init()
     for name, data in _SETTINGS['APP']['preload_fonts'].items():
@@ -186,20 +230,19 @@ def _app(_SETTINGS: dict):
             running = False
             break
 
-        key_events = pygame.event.get((pygame.KEYDOWN, pygame.KEYUP), pump = True)
-        captured = filter(
-            lambda event: event.key in (pygame.K_q, pygame.K_s), 
-            key_events
-        )
-        for event in captured:
-            match (event.type, event.key):
-                case pygame.KEYDOWN, pygame.K_q:
-                    running = False
-                    break
-                case pygame.KEYDOWN, pygame.K_s:
-                    save(screen, out_dir / f'frame_{frame:0>5}.png')
-
-        result = action.send(key_events)
+        events = pygame.event.get((
+            KEYDOWN, KEYUP, 
+            MOUSEBUTTONDOWN, MOUSEBUTTONUP
+        ), pump = True)
+        for event in events:
+            match (event.type):
+                case pygame.KEYDOWN:
+                    if event.key == pygame.K_q:
+                        running = False
+                    elif event.key == pygame.K_s:
+                        save(screen, out_dir / f'frame_{frame:0>5}.png')
+                
+        result = action.send(events)
         if not result:
             running = False
             break
