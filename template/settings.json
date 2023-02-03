@@ -1,6 +1,6 @@
 {
     "TEXT_RENDER": {
-        "shape": [11, 11],
+        "shape": [24, 24],
         "full_res": [540, 540],
         "backcolor": [165, 128, 165],
         "block_size": false

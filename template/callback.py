@@ -1,9 +1,11 @@
 from typing import Generator
 
+from itertools import cycle
+from math import sin
+
 from text_render import TextRender, Buffer, Dot
 from text_render import Font
 from text_render import line_seq
-from pygame import KEYDOWN, K_1, K_2, K_3
 
 def _callback(design: TextRender, user_settings: dict) -> Generator:
     """entry point
@@ -15,7 +17,7 @@ def _callback(design: TextRender, user_settings: dict) -> Generator:
     base_dot: Dot = Dot(
         pos = (-1, -1), 
         letter = '█', 
-        color = (100, 70, 140), backcolor = (130, 50, 90), 
+        color = (100, 70, 140), 
         font = UniVGA16, clear = True)
     
     # two lines below are required before drawing anything on design
@@ -24,8 +26,9 @@ def _callback(design: TextRender, user_settings: dict) -> Generator:
 
     # setup your sketch
     y = design.shape[1]//2
-    line = list(line_seq((0, y), (design.shape[0], y)))
-    text = 'Hello world'
+    line = list(line_seq((7, 1), (16, 10)))
+    text = cycle('o')
+    # text = (str(i) for i in range(10))
 
     layer1 = Buffer()
 
