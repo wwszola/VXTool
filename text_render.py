@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
-from functools import cached_property
+from itertools import chain, pairwise
 from json import load
 from pathlib import Path
 from sys import argv, path
-from typing import Iterator, Generator
+from typing import Iterator, Generator, Callable
 from dataclasses import dataclass
 from math import sqrt, pi, sin, cos
 from copy import copy
@@ -14,7 +14,8 @@ from pygame.font import Font
 from pygame.transform import scale
 from pygame.time import Clock
 from pygame.image import save
-from pygame import QUIT, KEYDOWN, KEYUP, K_q, K_s
+from pygame import QUIT, KEYDOWN, KEYUP, MOUSEBUTTONDOWN, MOUSEBUTTONUP
+from pygame import KMOD_CTRL
 
 COLOR = tuple[int, int, int]
 WHITE = (255, 255, 255)
@@ -146,7 +147,7 @@ class TextRender:
             self.block_size
         )
 
-    @cached_property
+    @property
     def grid_rect(self) -> Rect:
         return Rect((0, 0), self.shape)
 
@@ -173,7 +174,7 @@ class TextRender:
 
     def draw(self, buffer: Buffer):
         blits = []
-        for pos, dots in buffer.container.items():
+        for pos, dots in buffer._container.items():
             design_block = self.block_rect(pos)
             for dot in dots:
                 dot_render = self._get_render(dot)
@@ -226,26 +227,28 @@ def _app(_SETTINGS: dict):
 
     frame = 0
     while running:
-        if pygame.event.get(pygame.QUIT):
+        if pygame.event.get(QUIT):
             running = False
-            break
-
-        events = pygame.event.get((
+        
+        captured = pygame.event.get((
             KEYDOWN, KEYUP, 
             MOUSEBUTTONDOWN, MOUSEBUTTONUP
         ), pump = True)
-        for event in events:
-            match (event.type):
-                case pygame.KEYDOWN:
-                    if event.key == pygame.K_q:
+        
+        mods = pygame.key.get_mods()
+        is_ctrl_mod = bool(mods & KMOD_CTRL)
+        if is_ctrl_mod:
+            keydowns = filter(lambda e: e.type == KEYDOWN, captured)
+            for event in keydowns:
+                match (event.key):
+                    case pygame.K_q:
                         running = False
-                    elif event.key == pygame.K_s:
+                    case pygame.K_s:
                         save(screen, out_dir / f'frame_{frame:0>5}.png')
                 
-        result = action.send(events)
+        result = action.send(captured)
         if not result:
             running = False
-            break
 
         render = design.img()
         
