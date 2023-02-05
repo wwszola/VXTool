@@ -5,7 +5,7 @@ from math import sin
 
 from text_render import TextRender, Buffer, Dot
 from text_render import Font, Color
-from text_render import words_line
+from text_render import words_line, line_seq
 
 def _callback(design: TextRender, user_settings: dict) -> Generator:
     """entry point
@@ -54,12 +54,20 @@ def _callback(design: TextRender, user_settings: dict) -> Generator:
             for pos, letter in words_line(line, (1, i + 1))
     ))
 
+    layer3 = Buffer()
+    P1, P2 = (3, 2), (13, 6)
+    layer3.extend((
+        base_dot.variant(pos = pos, color = colors["GREEN"])
+        for pos in line_seq(P1, P2)
+    ))
+
     events = yield True
 
     # your draw loop
     while True:
         design.clear()
 
+        design.draw(layer3)
         design.draw(layer1)
         design.draw(layer2)
 

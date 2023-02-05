@@ -386,22 +386,19 @@ def reveal(text: str, start: int = 0) -> Iterator[str]:
         yield text[0: pos]
     return d
 
-def line_seq(p1: tuple[float, float], p2: tuple[float, float]) -> Generator:
+def line_seq(p1: tuple[float, float], p2: tuple[float, float], end: int = 1, snap: Callable = round) -> Generator:
     """DDA line generating algorithm"""
     dx, dy = p2[0] - p1[0], p2[1] - p1[1]
-    if abs(dx) >= abs(dy):
-        step = abs(dx)
-    else:
-        step = abs(dy)
+    step = max(abs(dx), abs(dy))
     
     if step <= 1e-16:
-        yield round(p1[0]), round(p1[1])
+        yield snap(p1[0]), snap(p1[1])
     else:
         dx, dy = dx / step, dy / step
-        for i in range(round(step) + 1):
+        for i in range(round(step) + end):
             x = p1[0] + i * dx
             y = p1[1] + i * dy
-            yield round(x), round(y)
+            yield snap(x), snap(y)
 
 def grid_seq(shape: tuple[int, int], origin: tuple[int, int] = (0, 0)) -> Generator:
     for y in range(origin[1], origin[1] + shape[1]):
@@ -435,7 +432,6 @@ def circle_seq(center: tuple[int, int], radius: int) -> Generator:
     y = center[1]
     yield from line_seq((x_left, y), (x_right, y))
 
-
 def polygon_seq(n: int, center: tuple[int, int], radius: int, offset: float = 0.0) -> Generator:
     if n < 1:
         return None
@@ -450,6 +446,6 @@ def polygon_seq(n: int, center: tuple[int, int], radius: int, offset: float = 0.
         for vert in range(1, n):
             angle = offset + vert * da
             pos = vert_x(angle), vert_y(angle)
-            yield from line_seq(prev, pos)
+            yield from line_seq(prev, pos, 0)
             prev = pos
         yield from line_seq(pos, first)
