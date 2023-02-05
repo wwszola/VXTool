@@ -4,8 +4,8 @@ from itertools import cycle
 from math import sin
 
 from text_render import TextRender, Buffer, Dot
-from text_render import Font
-from text_render import line_seq
+from text_render import Font, Color
+from text_render import words_line
 
 def _callback(design: TextRender, user_settings: dict) -> Generator:
     """entry point
@@ -17,24 +17,42 @@ def _callback(design: TextRender, user_settings: dict) -> Generator:
     base_dot: Dot = Dot(
         pos = (-1, -1), 
         letter = '█', 
-        color = (100, 70, 140), 
-        font = UniVGA16, clear = True)
+        color = Color(100, 70, 140), 
+        font = UniVGA16, clear = False)
     
     # two lines below are required before drawing anything on design
     design.block_size = base_dot.size 
     design.resize_screen()
 
-    # setup your sketch
-    y = design.shape[1]//2
-    line = list(line_seq((7, 1), (16, 10)))
-    text = cycle('o')
-    # text = (str(i) for i in range(10))
+    colors = user_settings["COLORS"]
 
     layer1 = Buffer()
+    texts = [
+        "This is a",
+        "test for ",
+        "colors.  ",
+    ]
+    color = colors["RED"]
+    for i, line in enumerate(texts):
+        layer1.extend((
+            base_dot.variant(pos = pos, letter = letter, color = color)
+            for pos, letter in words_line(line, (1, i + 1))
+    ))
 
-    # generating a dot for every letter in text
-    dots = (base_dot.variant(letter = letter, pos = pos) for letter, pos in zip(text, line))
-    layer1.extend(dots)
+    layer2 = Buffer()
+    texts2 = [
+        "            ",
+        "Is this     ",
+        "transparent?",
+    ]
+
+    color = colors["BLUE"]
+    color = Color(color.r, color.g, color.b, 192)
+    for i, line in enumerate(texts2):
+        layer2.extend((
+            base_dot.variant(pos = pos, letter = letter, color = color)
+            for pos, letter in words_line(line, (1, i + 1))
+    ))
 
     events = yield True
 
@@ -43,6 +61,7 @@ def _callback(design: TextRender, user_settings: dict) -> Generator:
         design.clear()
 
         design.draw(layer1)
+        design.draw(layer2)
 
         events = yield True
 

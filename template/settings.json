@@ -1,8 +1,8 @@
 {
     "TEXT_RENDER": {
-        "shape": [24, 24],
-        "full_res": [540, 540],
-        "backcolor": [165, 128, 165],
+        "shape": [16, 8],
+        "full_res": [720, 720],
+        "backcolor": [255, 255, 255],
         "block_size": false
     },
 
@@ -10,8 +10,8 @@
         "preload_fonts": {
             "UniVGA16": ["UniVGA16.ttf", 16]
         },
-        "backcolor": [165, 128, 165],
-        "render_size": [540, 540],
+        "backcolor": [0, 0, 0],
+        "render_size": [720, 720],
         "FPS": 30,
         "quit": false,
         "record": [-1, -1],
@@ -20,6 +20,10 @@
     },
 
     "USER": {
-        
+        "COLORS": {
+            "RED": [255, 0, 0],
+            "GREEN": [0, 255, 0],
+            "BLUE": [0, 0, 255]
+        }
     }
 }

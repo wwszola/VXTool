@@ -9,17 +9,14 @@ ____
 
 #### Based on PyGame. Recording uses system call `ffmpeg` for stitching frames into video, but it's not needed for rendering.
 
-RED, GREEN, BLUE - (0 - 255)
-(255, 255, 255) = WHITE
-
 TODO:
 - Position as (pygame.math.Vector2)
-- Color as (pygame.color.Color)
-- - Transparency
+- Loading png tilesets
 - Code:
 - - explain exceptions instead of `pass`
 - - Iterable instead of Iterator ??
-- 
+- Interface:
+- - pause/play/reload
 - __Buffer transformations__:
 - - Buffer.dot_seq is a generator
 - - map Vector2 functions on a dot_seq ->? multiprocessing

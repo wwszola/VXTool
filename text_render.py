@@ -5,6 +5,7 @@ from pathlib import Path
 from sys import argv, path
 from typing import Iterator, Generator, Callable
 from dataclasses import dataclass
+from collections import OrderedDict
 from math import sqrt, pi, sin, cos
 from copy import copy
 
@@ -17,17 +18,19 @@ from pygame.image import save
 from pygame import QUIT, KEYDOWN, KEYUP, MOUSEBUTTONDOWN, MOUSEBUTTONUP
 from pygame import KMOD_CTRL
 
-COLOR = tuple[int, int, int]
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
+class Color(pygame.Color):
+    def __hash__(self):
+        return hash(tuple(self))
+
+BLACK = Color(0, 0, 0, 255)
 
 @dataclass(eq = True, frozen = True)
 class Dot():
     pos: tuple[int, int] = field(default = None, hash = False, compare = False)
     
     letter: str = None
-    color: COLOR = None
-    backcolor: COLOR = field(default = None, kw_only = True)
+    color: Color = None
+    backcolor: Color = field(default = None, kw_only = True)
     font: Font | None = None
     clear: bool = True
 
@@ -121,7 +124,7 @@ class TextRender:
     full_res: tuple[int, int]
     block_size: tuple[int, int] = None
 
-    backcolor: COLOR = BLACK
+    backcolor: Color = BLACK
     
     cached_renders: dict[Dot, Surface] = field(default_factory = dict, kw_only = True)
     _screen: Surface = field(init = False)
@@ -161,9 +164,12 @@ class TextRender:
                 backcolor = (0, 0, 0, 0)
             if dot.clear and not dot.backcolor:
                 backcolor = self.backcolor
-
             block_render.fill(backcolor)            
+
             dot_render = dot.font.render(dot.letter, False, dot.color)
+            dot_render = dot_render.convert_alpha(block_render)
+            dot_render.set_alpha(dot.color.a)
+
             rect = dot_render.get_rect(center = block_render.get_rect().center)
             block_render.blit(dot_render, rect)
             
@@ -276,18 +282,24 @@ def _main():
     out_dir = project_dir / 'out'
     print(project_dir)
 
-    _SETTINGS: dict = {
-        "USER": {
-            "fonts": {},
-            "project_dir": project_dir,
-            "out_dir": out_dir
-        }
-    }
+    _SETTINGS = OrderedDict([
+        ("USER", OrderedDict([
+            ("fonts", {}),
+            ("project_dir", project_dir),
+            ("out_dir", out_dir)
+        ]))
+    ])
     settings = project_dir / 'settings.json'
     with open(settings, 'r') as file:
-        data = load(file)
+        data = load(file, object_pairs_hook = OrderedDict)
         data['USER'].update(_SETTINGS['USER'])
         _SETTINGS.update(data)
+
+    if "COLORS" in _SETTINGS["USER"]:
+        colors = OrderedDict()
+        for color_name, rgba in _SETTINGS["USER"]["COLORS"].items():
+            colors[color_name] = Color(*rgba)
+        _SETTINGS["USER"]["COLORS"] = colors
 
     _SETTINGS['TASKS']: dict = {
         'movie': _movie_task_call
