@@ -3,9 +3,9 @@ from typing import Generator
 from itertools import cycle
 from math import sin
 
-from text_render import TextRender, Buffer, Dot
-from text_render import Font, Color
-from text_render import words_line, line_seq
+from VXTool.render import TextRender
+from VXTool.core import Font, Color, Dot, Buffer
+from VXTool.util import words_line, line_seq
 
 def _callback(design: TextRender, user_settings: dict) -> Generator:
     """entry point

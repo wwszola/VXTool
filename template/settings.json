@@ -14,8 +14,8 @@
         "render_size": [720, 720],
         "FPS": 30,
         "quit": false,
-        "record": [-1, -1],
-        "end_tasks": []
+        "record": [0, 5],
+        "end_tasks": ["movie"]
     
     },
 
