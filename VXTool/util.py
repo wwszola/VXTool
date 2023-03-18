@@ -1,7 +1,48 @@
-from typing import Iterator, Generator, Callable
+from typing import Iterator, Generator, Callable, Iterable
 from math import sqrt, pi, sin, cos
 
-from .core import Rect
+from .core import Rect, Dot
+
+def animation(dot: Dot, **changes: dict[str, Iterable]):
+    sorted = {}
+    for name, frames in changes.items():
+        for i, value in enumerate(frames):
+            values = sorted.setdefault(i, dict()) 
+            values[name] = value
+    max_len = max(sorted.keys())
+    for i in range(max_len + 1):
+        yield dot.variant(**sorted[i])
+
+def sign(x):
+    if x > 1e-16: return 1
+    elif x < 1e-16: return -1
+    else: return 1
+    
+def snap(x):
+    return sign(x) * (int(abs(x)))
+
+def plot_func(func, size, x_range = (0, 1), y_range = (-1, 1), offset = (0, 0), snap: Callable = round):
+    W, H = size
+    left_W = - (W//2)
+    right_W = W + left_W
+
+    dy = (y_range[1] - y_range[0]) / (H - 1)
+
+    dx = (x_range[1] - x_range[0]) / (W - 1)
+    xs = [x_range[0] + i * dx for i in range(W)]
+    ys = [func(x) for x in xs]
+    
+    prev_pos = left_W + offset[0], - snap(ys[0]/dy) + offset[1]
+    for y, i in zip(ys[1:-1], range(left_W + 1, right_W - 1)):
+        pos = i + offset[0], - snap(y/dy) + offset[1]
+        yield from line_seq(prev_pos, pos, end = 0, snap = snap)
+        prev_pos = pos
+    last_pos = right_W + offset[0], -snap(ys[-1]/dy) + offset[1]
+    yield from line_seq(prev_pos, last_pos, end = 1, snap = snap)
+
+def plot_under_func(func, size, x_range = (0, 1), y_range = (-1, 1), offset = (0, 0), snap = round, y_end = 0):
+    for X, Y in plot_func(func, size, x_range, y_range, offset, snap):
+        yield from line_seq((X, Y), (X, y_end))
 
 def words_line(text: str, pos: tuple[int, int] = (0, 0)) -> Generator:
     y = pos[1]
