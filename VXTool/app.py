@@ -28,37 +28,30 @@ def _app(_SETTINGS: dict):
         except FileNotFoundError as e:
             print(e.msg)
 
-    design = TextRender(**_SETTINGS['TEXT_RENDER'])
-    action: Generator = _SETTINGS['APP']['_callback'](design, _SETTINGS['USER'])
-    running = action.send(None)
-
-    clock = Clock()
-
     record = _SETTINGS['APP'].get('record', None)
     quit = _SETTINGS['APP'].get('quit', None)
 
+    design = TextRender(**_SETTINGS['TEXT_RENDER'])
+    
+    action: Generator = _SETTINGS['APP']['_callback'](design, _SETTINGS['USER'])
+    running = next(action, False)
+    clock = Clock()
     frame = 0
     while running:
-        if pygame.event.get(QUIT):
-            running = False
+        running = not pygame.event.peek(QUIT)
         
-        captured = pygame.event.get((
-            KEYDOWN, KEYUP, 
-            MOUSEBUTTONDOWN, MOUSEBUTTONUP
-        ), pump = True)
-        
-        mods = pygame.key.get_mods()
-        is_ctrl_mod = bool(mods & KMOD_CTRL)
-        if is_ctrl_mod:
-            keydowns = filter(lambda e: e.type == KEYDOWN, captured)
-            for event in keydowns:
-                match (event.key):
-                    case pygame.K_q:
-                        running = False
-                    case pygame.K_s:
-                        save(screen, out_dir / f'frame_{frame:0>5}.png')
-                
-        result = action.send(captured)
+        keydowns = pygame.event.get(KEYDOWN)
+        captured = filter(lambda event: bool(event.mod & KMOD_CTRL), keydowns)
+        for event in captured:
+            match (event.key):
+                case pygame.K_q:
+                    running = False
+                case pygame.K_s:
+                    save(screen, out_dir / f'frame_{frame:0>5}.png')
+                case pygame.K_r:
+                    record = (frame, 999999)
+
+        result = next(action, False)
         if not result:
             running = False
 
