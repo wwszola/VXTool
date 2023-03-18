@@ -86,7 +86,7 @@ def _movie_task_str(settings: OrderedDict) -> str:
     """this is ffmpeg sequence that worked for me"""
     fps = settings['APP']['FPS']
     out_dir = settings['USER']['out_dir']
-    return f'ffmpeg -framerate {fps} -i ' + (out_dir / f'frame_%05d.png').as_posix() + ' -c:v libx264 -pix_fmt yuv420p -vf scale=out_color_matrix=bt709 -r 30 ' + (out_dir / 'movie.mp4').as_posix()
+    return f'ffmpeg -framerate {fps} -i ' + (out_dir / f'frame_%05d.png').as_posix() + ' -c:v libx264 -pix_fmt yuv420p -vf scale=out_color_matrix=bt709 -r 60 ' + (out_dir / 'movie.mp4').as_posix()
 
 def _movie_task_call(settings: OrderedDict, *args):
     from os import system
