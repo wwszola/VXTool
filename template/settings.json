@@ -15,7 +15,7 @@
         "FPS": 30,
         "quit": false,
         "record": [0, 5],
-        "end_tasks": ["movie"]
+        "end_tasks": []
     
     },
 
