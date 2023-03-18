@@ -37,7 +37,7 @@ class Dot():
         return Dot(**attrs)
 
 
-@dataclass()
+@dataclass
 class Buffer():
     _container: dict[tuple[int, int], list[Dot]] = field(default_factory = dict)
     
@@ -106,3 +106,19 @@ class Buffer():
 
     def mask(self):
         yield from self._container.keys()
+
+    def translated(self, vec):
+        sibling = Buffer()
+        for dot in self.dot_seq():
+            pos = dot.pos
+            new_pos = pos[0] + vec[0], pos[1] + vec[1]
+            sibling.put(dot.variant(pos = new_pos))
+        return sibling
+
+@dataclass
+class BoundBuffer(Buffer):
+    region: Rect = field(kw_only = True)
+
+    def put(self, dot: Dot):
+        if self.region.collidepoint(dot.pos):
+            super().put(dot)
