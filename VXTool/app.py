@@ -51,7 +51,7 @@ def _app(_SETTINGS: dict):
                 case pygame.K_r:
                     record = (frame, 999999)
 
-        result = next(action, False)
+        result = action.send(keydowns)
         if not result:
             running = False
 
