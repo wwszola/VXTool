@@ -13,15 +13,18 @@ def _callback(design: TextRender, user_settings: dict) -> Generator:
     then mark end of the each frame with yield True
     yield False to quit
     """
-    UniVGA16: Font = user_settings['fonts']['UniVGA16'][16]
+    # UniVGA16: Font = user_settings['fonts']['UniVGA16'][16]
     base_dot: Dot = Dot(
         pos = (-1, -1), 
         letter = '█', 
         color = Color(100, 70, 140), 
-        font = UniVGA16, clear = False)
+        font_family = "UniVGA16",  
+        font_size = 16,
+        clear = False
+    )
     
     # two lines below are required before drawing anything on design
-    design.block_size = base_dot.size 
+    design.block_size = design.get_dot_size(base_dot)
     design.resize_screen()
 
     colors = user_settings["COLORS"]
