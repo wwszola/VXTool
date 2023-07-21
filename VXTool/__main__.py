@@ -3,14 +3,8 @@ from pathlib import Path
 from sys import argv, path
 from collections import OrderedDict
 
-from pygame import Color as _Color
-
 from .app import _app
-
-class Color(_Color):
-    def __hash__(self):
-        return hash(tuple(self))
-BLACK = Color(0, 0, 0, 255)
+from .core import Color
 
 def _main():
     project_dir: Path = Path(argv[1]) 

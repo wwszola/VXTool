@@ -11,6 +11,12 @@ class Color(PyGameColor):
     def __hash__(self):
         return hash(tuple(self))
 
+    def __getstate__(self):
+        return tuple(self)
+    
+    def __setstate__(self, rgba):
+        self.update(rgba)
+
 BLACK = Color(0, 0, 0, 255)
 
 @dataclass(eq = True, frozen = True)
