@@ -26,12 +26,9 @@ class Dot():
     letter: str = None
     color: Color = None
     backcolor: Color = field(default = None, kw_only = True)
-    font: Font | None = None
+    font_family: str | None = None
+    font_size: int = None
     clear: bool = True
-
-    @property
-    def size(self):
-        return self.font.size(self.letter)
 
     @property
     def rect(self) -> Rect:
