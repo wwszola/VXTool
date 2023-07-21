@@ -18,9 +18,10 @@ def _app(_SETTINGS: dict):
     screen = pygame.display.set_mode(render_size)
 
     pygame.font.init()
+    fonts = {}
     for name, data in _SETTINGS['APP']['preload_fonts'].items():
         path = data[0]
-        family = _SETTINGS['USER']['fonts'][name] = {}
+        family = fonts[name] = {}
         try: 
             for size in data[1:]:
                 font = Font(project_dir / path, size)
@@ -31,7 +32,7 @@ def _app(_SETTINGS: dict):
     record = _SETTINGS['APP'].get('record', None)
     quit = _SETTINGS['APP'].get('quit', None)
 
-    design = TextRender(**_SETTINGS['TEXT_RENDER'])
+    design = TextRender(**_SETTINGS['TEXT_RENDER'], _font_bank = fonts)
     
     action: Generator = _SETTINGS['APP']['_callback'](design, _SETTINGS['USER'])
     running = next(action, False)
