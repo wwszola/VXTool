@@ -81,6 +81,12 @@ class Buffer():
     def clear(self):
         self._container.clear()
 
+    def clear_at(self, pos):
+        try:
+            del self._container[pos]
+        except KeyError:
+            pass
+
     def merge(self, other):
         for dots in other._container.values():
             self.extend(dots)
@@ -108,7 +114,11 @@ class Buffer():
         return buffer
 
     def mask(self):
-        yield from self._container.keys()
+        yield from (key for key, value in self._container.items() if value)
+
+    def cut(self, mask: Iterator[tuple[int, int]]):
+        for pos in mask:
+            self._container[pos] = []
 
     def translated(self, vec):
         sibling = Buffer()
