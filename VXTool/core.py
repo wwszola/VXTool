@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from typing import Iterator, Generator
-from dataclasses import dataclass
 from copy import copy
 
 from pygame import Color as PyGameColor
@@ -47,6 +46,7 @@ class Buffer():
     def put(self, dot: Dot):
         local: list[Dot] = self._container.setdefault(dot.pos, [])
         if dot.clear or dot.backcolor is not None:
+            local.clear()
             local.append(dot)
         else:
             try:
@@ -55,6 +55,30 @@ class Buffer():
                 pass
             finally:
                local.append(dot)
+
+    def diff(self, other):
+        diff: Buffer = Buffer()
+        clear_mask = set(self._container.keys()) - (other._container.keys())
+        for pos in other._container.keys():
+            if pos not in self._container:
+                clear_mask.add(pos)
+                diff._container[pos] = other._container[pos]
+            else:
+                self_local = self._container[pos]
+                other_local = other._container[pos]
+                i = 0
+                for (dot1, dot2) in zip(self_local, other_local):
+                    if dot1 != dot2:
+                        break
+                    i += 1
+                if i == len(self_local):
+                    if i != len(other_local):
+                        diff._container[pos] = other_local[i:]
+                else:
+                    clear_mask.add(pos)
+                    diff._container[pos] = other_local[:]
+
+        return diff, clear_mask
 
     def extend(self, dots: Iterator[Dot]):
         for dot in dots:
