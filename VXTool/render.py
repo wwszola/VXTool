@@ -1,11 +1,12 @@
 from dataclasses import dataclass, field
+from multiprocessing import Queue
 
 from pygame import Surface, Rect
 from pygame.font import Font
 from pygame.transform import scale
 from pygame import SRCALPHA
 
-from .core import Color, BLACK, Dot, Buffer
+from .core import Color, BLACK, Dot, Buffer, BoundBuffer
 
 @dataclass
 class TextRender:
@@ -20,9 +21,14 @@ class TextRender:
     cached_renders: dict[Dot, Surface] = field(default_factory = dict, kw_only = True)
     _screen: Surface = field(init = False)
 
+    _last_state: BoundBuffer = field(init = False)
+    _buffer_queue: Queue = field(init = False)
+
     def __post_init__(self):
         if self.block_size:
             self.resize_screen()
+        self._last_state = BoundBuffer(region = self.grid_rect)
+        self._buffer_queue = Queue()
 
     @property
     def full_size(self) -> tuple[int, int]:
@@ -31,6 +37,7 @@ class TextRender:
     def resize_screen(self):
         print(f'Block size: {self.block_size} Full size: {self.full_size}')
         self.screen = Surface(self.full_size, SRCALPHA)
+        self.screen.fill(self.backcolor)
         empty_block = Surface(self.block_size, SRCALPHA)
         empty_block.fill(self.backcolor)
         self.cached_renders['_EMPTY'] = empty_block
@@ -74,16 +81,37 @@ class TextRender:
         
         return self.cached_renders[dot]
 
-    def draw(self, buffer: Buffer):
+    def submit(self, buffer: Buffer):
+        entry = BoundBuffer(region = self.grid_rect)
+        entry.extend(buffer.dot_seq())
+        # print('\n ENTRY: ', entry)
+        self._buffer_queue.put(entry)
+
+    def _render_next(self, block = True, timeout: float = None):
+        entry: Buffer = self._buffer_queue.get(block, timeout)
+        # print('ENTRY: ', entry)
+        diff, clear_mask = self._last_state.diff(entry)
+        # print('RENDER DIFF: ', diff, clear_mask)
+        all_blits = self._all_blits(diff, clear_mask)
+        # print('ALL BLITS: ', all_blits)
+        self.screen.blits(all_blits)
+        self._last_state = entry
+
+    def _all_blits(self, diff: Buffer, clear_mask: set[tuple[int, int]]):
         blits = []
-        for pos, dots in buffer._container.items():
+        
+        empty_dot = self.cached_renders["_EMPTY"]
+        for pos in clear_mask:
+            design_block = self.block_rect(pos)
+            blits.append((empty_dot, design_block))
+        
+        for pos, dots in diff._container.items():
             design_block = self.block_rect(pos)
             for dot in dots:
                 dot_render = self._get_render(dot)
-                # rect = dot_render.get_rect(center = design_block.center)
                 blits.append((dot_render, design_block))
-        self.screen.blits(blits)
-    
+        return blits        
+
     def clear(self, region: Rect = None):
         if not region:
             region = self.grid_rect
