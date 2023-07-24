@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from multiprocessing import Queue
+from enum import Flag, auto
 
 from pygame import Surface, Rect
 from pygame.font import Font
@@ -7,6 +8,13 @@ from pygame.transform import scale
 from pygame import SRCALPHA
 
 from .core import Color, BLACK, Dot, Buffer, BoundBuffer
+
+class RENDER_MSG(Flag):
+    DEFAULT = auto()
+    NO_CHANGE = auto()
+    CONTINUE = auto()
+    SET_BLOCK_SIZE = auto()
+    ATOMIC_SET_BLOCK_SIZE = NO_CHANGE | CONTINUE | SET_BLOCK_SIZE    
 
 @dataclass
 class TextRender:
@@ -19,20 +27,24 @@ class TextRender:
     _font_bank: dict[Font] = field(default_factory = dict)
     
     cached_renders: dict[Dot, Surface] = field(default_factory = dict, kw_only = True)
-    _screen: Surface = field(init = False)
+    _screen: Surface = field(init = False, default = None)
 
     _last_state: BoundBuffer = field(init = False)
-    _buffer_queue: Queue = field(init = False)
+    _render_q: Queue = field(init = False)
+    frames_rendered_count: int = field(init = False, default = 0)
 
     def __post_init__(self):
         if self.block_size:
             self.resize_screen()
         self._last_state = BoundBuffer(region = self.grid_rect)
-        self._buffer_queue = Queue()
+        self._render_q = Queue()
 
     @property
     def full_size(self) -> tuple[int, int]:
         return (self.shape[0] * self.block_size[0], self.shape[1] * self.block_size[1])
+
+    def should_resize(self):
+        return (not self.screen and self.block_size) or (self.screen and self.screen.get_size() != self.full_size)
 
     def resize_screen(self):
         print(f'Block size: {self.block_size} Full size: {self.full_size}')
@@ -81,21 +93,35 @@ class TextRender:
         
         return self.cached_renders[dot]
 
-    def submit(self, buffer: Buffer):
-        entry = BoundBuffer(region = self.grid_rect)
-        entry.extend(buffer.dot_seq())
-        # print('\n ENTRY: ', entry)
-        self._buffer_queue.put(entry)
-
     def _render_next(self, block = True, timeout: float = None):
-        entry: Buffer = self._buffer_queue.get(block, timeout)
-        # print('ENTRY: ', entry)
-        diff, clear_mask = self._last_state.diff(entry)
-        # print('RENDER DIFF: ', diff, clear_mask)
-        all_blits = self._all_blits(diff, clear_mask)
-        # print('ALL BLITS: ', all_blits)
-        self.screen.blits(all_blits)
-        self._last_state = entry
+        entry = self._render_q.get(block, timeout)
+        # print(f"TEXTRENDER ENTRY: {(entry[0])}")
+        flags = entry[0]
+
+        if flags & RENDER_MSG.SET_BLOCK_SIZE:
+            block_size = self.get_dot_size(entry[1])
+            self.block_size = block_size
+            self.resize_screen()
+
+        if not flags & RENDER_MSG.NO_CHANGE:
+            buffer = BoundBuffer(region=self.grid_rect)
+            buffer.merge(entry[-1])
+            diff, clear_mask = self._last_state.diff(buffer)
+            # print('RENDER DIFF: ', diff, clear_mask)
+            
+            if diff.is_empty() and len(clear_mask) == 0:
+                return None, flags
+            
+            all_blits = self._all_blits(diff, clear_mask)
+            # print('ALL BLITS: ', all_blits)
+            self.screen.blits(all_blits)
+            self._last_state = buffer
+
+        if flags & RENDER_MSG.CONTINUE:
+            return self._render_next(block, timeout)
+        
+        self.frames_rendered_count += 1
+        return scale(self.screen, self.full_res), flags
 
     def _all_blits(self, diff: Buffer, clear_mask: set[tuple[int, int]]):
         blits = []
@@ -121,7 +147,4 @@ class TextRender:
             region.width * self.block_size[0],
             region.height * self.block_size[1]
         )
-        self.screen.fill(self.backcolor, region)
-
-    def img(self) -> Surface:
-        return scale(self.screen, self.full_res)       
+        self.screen.fill(self.backcolor, region)     
