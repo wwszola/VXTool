@@ -43,6 +43,9 @@ class Dot():
 class Buffer():
     _container: dict[tuple[int, int], list[Dot]] = field(default_factory = dict)
     
+    def is_empty(self):
+        return all(len(local) == 0 for local in self._container.values())
+
     def put(self, dot: Dot):
         local: list[Dot] = self._container.setdefault(dot.pos, [])
         if dot.clear or dot.backcolor is not None:
