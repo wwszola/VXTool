@@ -41,9 +41,9 @@ def _main():
 
     try:
         path.append(project_dir.as_posix())
-        from callback import _callback
-        assert _callback
-        _SETTINGS['APP']['_callback'] = _callback
+        from callback import Callback
+        assert Callback
+        _SETTINGS['APP']['_callback'] = Callback
     except (ImportError, AssertionError) as e:
         print(e.msg)
         return 3
@@ -51,23 +51,6 @@ def _main():
     render_size = _SETTINGS['APP']['render_size']
     full_res = _SETTINGS['TEXT_RENDER']['full_res']
     shape = _SETTINGS['TEXT_RENDER']['shape']
-    rendered_block_ratio = (
-        shape[0]/full_res[0],
-        shape[1]/full_res[1] 
-    )
-    left_top_inside = (
-        (render_size[0]-full_res[0])//2 * rendered_block_ratio[0],
-        (render_size[1]-full_res[1])//2 * rendered_block_ratio[1]
-    )
-    def screen_to_grid(screen_pos):
-        x, y = screen_pos
-        x *= rendered_block_ratio[0]
-        x -= left_top_inside[0]
-        y *= rendered_block_ratio[1]
-        y -= left_top_inside[1]
-        return x, y
-
-    _SETTINGS['USER']['screen_to_grid'] = screen_to_grid
 
     _app(_SETTINGS)
 
