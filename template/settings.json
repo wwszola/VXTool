@@ -15,8 +15,8 @@
         "FPS": 30,
         "quit": false,
         "record": [0, 5],
-        "end_tasks": []
-    
+        "end_tasks": [],
+        "real_time": false
     },
 
     "USER": {
