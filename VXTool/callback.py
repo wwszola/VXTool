@@ -32,15 +32,24 @@ class CallbackProcess(Process):
         self.setup()
 
     def run(self):
-        # _callback(self.design, self.user_settings)
         self.running = True
         while self.running:
             try:
                 self._dispatch_events(block = True, timeout=1.0)
                 self.update()
                 self.updates_count += 1
+                # print(f"CALLBACK FRAMES NO. {self.updates_count} {str(self.running)}")
             except QueueEmpty:
                 self.running = False
+
+        # try:
+        #     self.event_frame_q.get_nowait()
+        # except QueueEmpty:
+        #     pass
+        
+        for info in self.widgets_info.values():
+            # info['render_q'].close()
+            info['render_q'].cancel_join_thread()
 
     def _prepare_event_handlers(self):
         for key in dir(self):
@@ -58,7 +67,7 @@ class CallbackProcess(Process):
 
     def _dispatch_events(self, block = True, timeout = None):
         events = self.event_frame_q.get(block, timeout)
-        print("DISPATCH EVENTS: ", [(event.type_name, event.attrs) for event in events])
+        # print("DISPATCH EVENTS: ", [(event.type_name, event.attrs) for event in events])
         for event in events:
             handler = None
             name = event.type_name.upper()
@@ -78,7 +87,7 @@ class CallbackProcess(Process):
                 if not buffer:
                     raise ValueError('add RENDER_MSG.NO_CHANGE flag to send without the buffer.')                   
                 entry.append(buffer)
-            print(f'CALLBACK ENTRY: {(flags, *args)}')
+            # print(f'CALLBACK ENTRY: {(flags, *args)}')
             self.widgets_info[widget_name]['render_q'].put(tuple(entry), block=False)
 
     def setup(self):

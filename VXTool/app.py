@@ -93,7 +93,6 @@ def _app(_SETTINGS: dict):
             match (event.key):
                 case pygame.K_q:
                     running = False
-                    callback.running = False
                 case pygame.K_s:
                     save(screen, out_dir / f'frame_{frame:0>5}.png')
                 case pygame.K_r:
@@ -118,6 +117,8 @@ def _app(_SETTINGS: dict):
                     blits.append((surface, rect))
             except QueueEmpty:
                 pass
+        # print(f"WDIGET FRAMES NO. {widget.frames_rendered_count}")
+        # print(f"APP FRAMES: {frame}")
         # print("SCREEN BLITS:", blits)
         # screen.fill(_SETTINGS['APP']['backcolor'])
         if blits:
@@ -137,5 +138,10 @@ def _app(_SETTINGS: dict):
         real_fps = 1000/last_delta
         pygame.display.set_caption(f'{real_fps:.2}')
 
+
+    callback.running = False
+    # event_out_q.close()
+    event_out_q.cancel_join_thread()
     callback.join()
+    
     pygame.quit()
