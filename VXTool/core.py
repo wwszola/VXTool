@@ -18,27 +18,35 @@ class Color(PyGameColor):
 
 BLACK = Color(0, 0, 0, 255)
 
-@dataclass(eq = True, frozen = True)
-class Dot():
-    pos: tuple[int, int] = field(default = None, hash = False, compare = False)
-    
-    letter: str = None
-    color: Color = None
-    backcolor: Color = field(default = None, kw_only = True)
-    font_family: str | None = None
-    font_size: int = None
-    clear: bool = True
+class Dot:
+    def __init__(self, pos: tuple[int, int] = None, letter: str = None,
+            color: Color = None, backcolor: Color = None, 
+            font_family: str | None = None, font_size: int = None,
+            clear: bool = True,
+            ):
+        self.pos: tuple[int, int] = pos
+        self.letter: str = letter
+        self.color: Color = color
+        self.backcolor: Color = backcolor
+        self.font_family: str = font_family
+        self.font_size: str = font_size
+        self.clear: str = clear
 
-    @property
-    def rect(self) -> Rect:
-        return Rect((0, 0), self.size)
+    def __hash__(self) -> int:
+        # excluding self.pos
+        return hash((
+            self.letter, self.color, self.backcolor,
+            self.font_size, self.clear
+        ))
+    
+    def __eq__(self, __value: object) -> bool:
+        return self.__hash__() == __value.__hash__()
 
     def variant(self, **kwargs):
         attrs = copy(self.__dict__)
         attrs.update(kwargs)
         return Dot(**attrs)
-
-
+    
 @dataclass
 class Buffer():
     _container: dict[tuple[int, int], list[Dot]] = field(default_factory = dict)
