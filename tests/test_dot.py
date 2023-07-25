@@ -1,25 +1,10 @@
 import unittest
-import time
+
+from .util import Timer
 
 from VXTool.core import Dot, Color
 
-class Profiler:
-    def __init__(self, number, func):
-        self.number = number
-        self.func = func
-        self.start_time = 0.0
-        self.delta = 0.0
-        self.average = 0.0
 
-    def run(self):
-        self.start_time = time.time()
-        for i in range(self.number):
-            (self.func)()
-        self.delta = time.time() - self.start_time
-        self.average = self.delta/self.number
-
-        return self
-    
 class DotTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -43,7 +28,7 @@ class DotTestCase(unittest.TestCase):
 
     def test_variant_performance(self):
         dot = DotTestCase.base_dot
-        p = Profiler(
+        p = Timer(
             number = 100000, 
             func = lambda: dot.variant(
                 pos = (2, 2), 
@@ -52,12 +37,12 @@ class DotTestCase(unittest.TestCase):
                 font_size = 16
             )
         ).run()
-        print("{} delta: {:.2}s average: {:.2}s".format(self.id(), p.delta, p.average))
+        print(self.id(), p.stats)
 
     def test_hash_performance(self):
         dot = DotTestCase.base_dot
-        p = Profiler(
+        p = Timer(
             number = 100000,
             func = lambda: hash(dot)
         ).run()
-        print("{} delta: {:.2}s average: {:.2}s".format(self.id(), p.delta, p.average))
+        print(self.id(), p.stats)
