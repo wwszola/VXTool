@@ -58,14 +58,7 @@ class Buffer():
         local: list[Dot] = self._container.setdefault(dot.pos, [])
         if dot.clear or dot.backcolor is not None:
             local.clear()
-            local.append(dot)
-        else:
-            try:
-                local.remove(dot)
-            except ValueError:
-                pass
-            finally:
-               local.append(dot)
+        local.append(dot)
 
     def diff(self, other):
         diff: Buffer = Buffer()
