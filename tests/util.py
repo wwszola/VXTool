@@ -12,10 +12,9 @@ class Timer:
     def run(self):
         self.start_time = time.time()
         for i in range(self.number):
-            (self.func)()
+            (self.func)(i)
         self.delta = time.time() - self.start_time
         self.average = self.delta/self.number
-
         return self
     
     @property

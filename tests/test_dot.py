@@ -30,7 +30,7 @@ class DotTestCase(unittest.TestCase):
         dot = DotTestCase.base_dot
         p = Timer(
             number = 100000, 
-            func = lambda: dot.variant(
+            func = lambda _: dot.variant(
                 pos = (2, 2), 
                 letter = 'A', 
                 color = Color(125, 125, 255),
@@ -43,6 +43,6 @@ class DotTestCase(unittest.TestCase):
         dot = DotTestCase.base_dot
         p = Timer(
             number = 100000,
-            func = lambda: hash(dot)
+            func = lambda _: hash(dot)
         ).run()
         print(self.id(), p.stats)
