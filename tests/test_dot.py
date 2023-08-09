@@ -18,6 +18,22 @@ class DotTestCase(unittest.TestCase):
             clear = True
         )
 
+    def test_dot_hash(self):
+        dot = DotTestCase.base_dot
+        new_dot = dot.variant(
+            pos = (1, 1)
+        )
+        self.assertEqual(hash(dot), hash(new_dot), 'pos changed hash')
+        new_dot = dot.variant(
+            letter = 'B',
+            color = Color(0, 255, 0),
+            backcolor = Color(255, 0, 255),
+            font_family = 'FONT2',
+            font_size = 16,
+            clear = False
+        )
+        self.assertNotEqual(hash(dot), hash(new_dot), 'attr different from pos didn\' changed hash')
+
     def test_variant(self):
         new_dot = DotTestCase.base_dot.variant(
             pos = (1, 1), letter = 'B', clear = False
