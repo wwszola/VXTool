@@ -9,6 +9,36 @@ ____
 
 #### Based on PyGame. Recording uses system call `ffmpeg` for stitching frames into video, but it's not needed for rendering.
 
+Buffer.advance
+
+drawing 
+
+Now: 
+Main spawns App, which spawns TextRender and Callback
+App gathers events and sends it to Callback
+Dots sit on Callback
+Buffers(collection of dots) are sent into TextRender draw
+
+After:
+TextRender has internal StaticBuffer. 
+Callback submits a diff to the queue, TextRender applies the diff and renders next surface when needed.
+App gathers events every real frame, while displaying last available TextRender surface
+Callback chooses to wait or not for new InputFrame.
+TextRender reads the fontname from settings
+Main spawns App and Callback
+KeyState sitting on App. Callback accessing 
+
+Mouse
+screen_to_grid
+
+Profile:
+- dot and buffer operations
+
+TODO:
+- logging, test and measure performance
+- allow for adding multiple widgets
+- document and test sync variants
+- handle mouse events
 TODO:
 - Position as (pygame.math.Vector2)
 - Loading png tilesets
@@ -17,11 +47,7 @@ TODO:
 - - Iterable instead of Iterator ??
 - Interface:
 - - pause/play/reload
-- __Buffer transformations__:
-- - Buffer.dot_seq is a generator
-- - map Vector2 functions on a dot_seq ->? multiprocessing
 - __Multiprocessing__
-- - separate processes for _app, _callback
 - - async mode (?): TextRender.draw queues immediate rendering
 - - what scales worse, callback calculations or rendering
 - Live music performance:
