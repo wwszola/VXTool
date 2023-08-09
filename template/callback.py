@@ -1,6 +1,6 @@
 from VXTool.render import TextRender, RENDER_MSG
 from VXTool.core import Color, Dot, Buffer
-from VXTool.util import words_line, line_seq
+from VXTool.util import words_line, line_seq, grid_seq
 from VXTool.app import PickableEvent
 from VXTool.callback import CallbackProcess
 
@@ -66,6 +66,9 @@ class Callback(CallbackProcess):
             letter = self.text[self.updates_count%len(self.text)],
             clear = True
         ))
+        letter = self.text[self.updates_count % len(self.text)]
+        for pos in grid_seq(self.widgets_info['TEXT_RENDER']['shape']):
+            self.screen.put(self.base_dot.variant(pos = pos, letter = letter, clear = True))
         self.send('TEXT_RENDER', self.screen)
 
     def on_KEYDOWN_SPACE(self, attrs: dict):

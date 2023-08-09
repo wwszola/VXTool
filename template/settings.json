@@ -1,6 +1,6 @@
 {
     "TEXT_RENDER": {
-        "shape": [16, 8],
+        "shape": [64, 32],
         "full_res": [720, 720],
         "backcolor": [255, 255, 255],
         "block_size": false
@@ -13,8 +13,8 @@
         "backcolor": [0, 0, 0],
         "render_size": [720, 720],
         "FPS": 30,
-        "quit": false,
-        "record": [0, 5],
+        "quit": 0,
+        "record": [0, 0],
         "end_tasks": [],
         "real_time": false
     },
