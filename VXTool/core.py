@@ -32,11 +32,21 @@ class Dot:
         self.font_size: str = font_size
         self.clear: str = clear
 
+    def __str__(self) -> str:
+        attrs = []
+        for attr, value in self.__dict__.items():
+            if value is not None:
+                attrs.append(f"{attr}={value}")
+        return "Dot(" + ", ".join(attrs) + ")"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
     def __hash__(self) -> int:
         # excluding self.pos
         return hash((
             self.letter, self.color, self.backcolor,
-            self.font_size, self.clear
+            self.font_family, self.font_size, self.clear
         ))
     
     def __eq__(self, __value: object) -> bool:
