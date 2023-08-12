@@ -14,6 +14,7 @@ class RENDER_MSG(Flag):
     NO_CHANGE = auto()
     CONTINUE = auto()
     SET_BLOCK_SIZE = auto()
+    REGISTER_DOTS = auto()
     ATOMIC_SET_BLOCK_SIZE = NO_CHANGE | CONTINUE | SET_BLOCK_SIZE    
 
 @dataclass
@@ -26,7 +27,8 @@ class TextRender:
 
     _font_bank: dict[Font] = field(default_factory = dict)
     
-    cached_renders: dict[Dot, Surface] = field(default_factory = dict, kw_only = True)
+    cached_renders: dict[int|str, Surface] = field(default_factory = dict, kw_only = True)
+    _hash_to_dot: dict[int, Dot] = field(default_factory=dict, kw_only=True)
     _screen: Surface = field(init = False, default = None)
 
     _last_state: BoundBuffer = field(init = False)
@@ -67,41 +69,48 @@ class TextRender:
     def get_dot_size(self, dot: Dot) -> Font:
         return self._font_bank[dot.font_family][dot.font_size].size(dot.letter)
 
-    def _get_render(self, dot: Dot) -> Surface:
-        dot_render = self.cached_renders.get(dot, None)
-        if not dot_render:
-            block_render = Surface(self.block_size, SRCALPHA)
+    def _gen_dot_render(self, dot: Dot) -> Surface:
+        block_render = Surface(self.block_size, SRCALPHA)
 
-            backcolor = dot.backcolor 
-            if not dot.clear and not dot.backcolor:
-                backcolor = (0, 0, 0, 0)
-            if dot.clear and not dot.backcolor:
-                backcolor = self.backcolor
-            block_render.fill(backcolor)            
+        backcolor = dot.backcolor 
+        if not dot.clear and not dot.backcolor:
+            backcolor = (0, 0, 0, 0)
+        if dot.clear and not dot.backcolor:
+            backcolor = self.backcolor
+        block_render.fill(backcolor)            
 
-            font = self._font_bank[dot.font_family][dot.font_size]
+        font = self._font_bank[dot.font_family][dot.font_size]
 
-            dot_render = font.render(dot.letter, False, dot.color)
-            dot_render = dot_render.convert_alpha(block_render)
-            dot_render.set_alpha(dot.color.a)
+        dot_render = font.render(dot.letter, False, dot.color)
+        dot_render = dot_render.convert_alpha(block_render)
+        dot_render.set_alpha(dot.color.a)
 
-            rect = dot_render.get_rect(center = block_render.get_rect().center)
-            block_render.blit(dot_render, rect)
-            
-            block_render = block_render.convert_alpha()
-            self.cached_renders[dot] = block_render
+        rect = dot_render.get_rect(center = block_render.get_rect().center)
+        block_render.blit(dot_render, rect)
         
-        return self.cached_renders[dot]
+        block_render = block_render.convert_alpha()
+        return block_render
+
+    def _register_dot(self, dot: Dot):
+        _hash = hash(dot)
+        self._hash_to_dot.setdefault(_hash, dot)
 
     def _render_next(self, block = True, timeout: float = None):
         entry = self._render_q.get(block, timeout)
-        # print(f"TEXTRENDER ENTRY: {(entry[0])}")
+        # print(f"TEXTRENDER ENTRY: {entry}")
         flags = entry[0]
+        args = list(entry[1:])
 
         if flags & RENDER_MSG.SET_BLOCK_SIZE:
-            block_size = self.get_dot_size(entry[1])
+            dot = args.pop(0)
+            block_size = self.get_dot_size(dot)
             self.block_size = block_size
             self.resize_screen()
+
+        if flags & RENDER_MSG.REGISTER_DOTS:
+            new_dots = args.pop(0)
+            for _hash, dot in new_dots:
+                self._hash_to_dot[_hash] = dot
 
         if not flags & RENDER_MSG.NO_CHANGE:
             # buffer = BoundBuffer(region=self.grid_rect)
@@ -117,9 +126,18 @@ class TextRender:
             # self.screen.blits(all_blits)
             # self._last_state = buffer
 
-            buffer = entry[-1]
+            content = args.pop(0)
+            length = len(content)
+            blits = []
+            for i in range(0, length, 2):
+                pos, _hash = content[i : i+2]
+                if _hash not in self.cached_renders:
+                    dot = self._hash_to_dot[_hash]
+                    self.cached_renders[_hash] = self._gen_dot_render(dot)
+                rect = self.block_rect(pos)
+                blits.append((self.cached_renders[_hash], rect))
             self.screen.fill(self.backcolor)
-            self.screen.blits(self._all_blits(buffer, set()))
+            self.screen.blits(blits)
 
         if flags & RENDER_MSG.CONTINUE:
             return self._render_next(block, timeout)

@@ -7,7 +7,7 @@ from pygame import KEYDOWN, KEYUP
 from pygame.key import name as key_name
 
 from VXTool.render import RENDER_MSG
-from VXTool.core import Buffer
+from VXTool.core import Dot, Buffer
 from VXTool.app import PickableEvent
 
 
@@ -25,6 +25,8 @@ class CallbackProcess(Process):
 
         self._event_handlers: dict[str, Callable] = dict()
         self._prepare_event_handlers()
+
+        self._hash_to_dot: dict[int, Dot] = dict()
 
         print(f"\nCallback setup: {self.widgets_info} {self.user_settings} {self._event_handlers.keys()}")
 
@@ -80,14 +82,34 @@ class CallbackProcess(Process):
             if handler:
                 handler(event.attrs)
     
+    def _buffer_to_args(self, buffer: Buffer):
+        dot_seq = []
+        new_dots = []
+        for dot in buffer.dot_seq():                
+            _hash = hash(dot)
+            if _hash not in self._hash_to_dot:
+                self._hash_to_dot[_hash] = dot
+                new_dots.append((_hash, dot))
+            dot_seq.append(dot.pos)
+            dot_seq.append(_hash)
+        return dot_seq, new_dots
+
     def send(self, widget_name: str, buffer: Buffer, flags: RENDER_MSG = RENDER_MSG.DEFAULT, *args):
         if widget_name in self.widgets_info:
             entry = [flags, *args]
             if not flags & RENDER_MSG.NO_CHANGE:
                 if not buffer:
                     raise ValueError('add RENDER_MSG.NO_CHANGE flag to send without the buffer.')                   
-                entry.append(buffer)
-            # print(f'CALLBACK ENTRY: {(flags, *args)}')
+                if flags & RENDER_MSG.REGISTER_DOTS:
+                    raise ValueError('add RENDER_MSG.NO_CHANGE to register dots with RENDER_MSG.REGISTER_DOTS')
+
+                dot_seq, new_dots = self._buffer_to_args(buffer)
+                if new_dots:
+                    entry[0] = entry[0] | RENDER_MSG.REGISTER_DOTS
+                    entry.append(new_dots)
+                entry.append(dot_seq)
+
+            # print(f'CALLBACK ENTRY: {entry}')
             self.widgets_info[widget_name]['render_q'].put(tuple(entry), block=False)
 
     def setup(self):
