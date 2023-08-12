@@ -104,18 +104,22 @@ class TextRender:
             self.resize_screen()
 
         if not flags & RENDER_MSG.NO_CHANGE:
-            buffer = BoundBuffer(region=self.grid_rect)
-            buffer.merge(entry[-1])
-            diff, clear_mask = self._last_state.diff(buffer)
-            # print('RENDER DIFF: ', diff, clear_mask)
+            # buffer = BoundBuffer(region=self.grid_rect)
+            # buffer.merge(entry[-1])
+            # diff, clear_mask = self._last_state.diff(buffer)
+            # # print('RENDER DIFF: ', diff, clear_mask)
             
-            if diff.is_empty() and len(clear_mask) == 0:
-                return None, flags
+            # if diff.is_empty() and len(clear_mask) == 0:
+            #     return None, flags
             
-            all_blits = self._all_blits(diff, clear_mask)
-            # print('ALL BLITS: ', all_blits)
-            self.screen.blits(all_blits)
-            self._last_state = buffer
+            # all_blits = self._all_blits(diff, clear_mask)
+            # # print('ALL BLITS: ', all_blits)
+            # self.screen.blits(all_blits)
+            # self._last_state = buffer
+
+            buffer = entry[-1]
+            self.screen.fill(self.backcolor)
+            self.screen.blits(self._all_blits(buffer, set()))
 
         if flags & RENDER_MSG.CONTINUE:
             return self._render_next(block, timeout)
