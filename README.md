@@ -9,47 +9,32 @@ ____
 
 #### Based on PyGame. Recording uses system call `ffmpeg` for stitching frames into video, but it's not needed for rendering.
 
-Buffer.advance
 
-drawing 
-
-Now: 
-Main spawns App, which spawns TextRender and Callback
-App gathers events and sends it to Callback
-Dots sit on Callback
-Buffers(collection of dots) are sent into TextRender draw
-
-After:
-TextRender has internal StaticBuffer. 
-Callback submits a diff to the queue, TextRender applies the diff and renders next surface when needed.
-App gathers events every real frame, while displaying last available TextRender surface
-Callback chooses to wait or not for new InputFrame.
-TextRender reads the fontname from settings
-Main spawns App and Callback
-KeyState sitting on App. Callback accessing 
-
-Mouse
-screen_to_grid
-
-Profile:
-- dot and buffer operations
+### General notes
+- Callback doesn't send whole buffer, only pos and hash list 
+- Hash to Dot dict being held by TextRender.
+- Callback holds its own hash to dot and sends updates
+- 
+- Main spawns App and Callback
+#### Diff idea
+- Slow.
+- TextRender has internal Buffer. 
+- Callback submits a diff to the queue, TextRender blits needed dots.
+#### Sync
+- App gathers events every window frame, while displaying last available TextRender surface.
+- (didnt try not waiting) Callback chooses to wait or not for new InputFrame.
+#### Dot
+- TextRender font lookup by fontname and size.
 
 TODO:
-- logging, test and measure performance
 - allow for adding multiple widgets
 - document and test sync variants
-- handle mouse events
-TODO:
+- handle mouse events (screen_to_grid)
+- Buffer.advance for animation
 - Position as (pygame.math.Vector2)
 - Loading png tilesets
-- Code:
-- - explain exceptions instead of `pass`
-- - Iterable instead of Iterator ??
 - Interface:
 - - pause/play/reload
-- __Multiprocessing__
-- - async mode (?): TextRender.draw queues immediate rendering
-- - what scales worse, callback calculations or rendering
 - Live music performance:
 - - spectral analysis
 - - midi input 
