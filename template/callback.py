@@ -14,7 +14,7 @@ class Callback(CallbackProcess):
             font_size = 16,
             clear = False
         )
-        self.send('Screen', None, RENDER_MSG.PROCEDURE & RENDER_MSG.SET_BLOCK_SIZE, self.base_dot)
+        self.send('Screen', None, RENDER_MSG.PROCEDURE | RENDER_MSG.SET_BLOCK_SIZE, self.base_dot)
 
         colors = self.user_settings["COLORS"]
 

@@ -17,7 +17,7 @@ class RENDER_MSG(Flag):
     REGISTER_DOTS = auto()
     DEFAULT = CLEAR
     PROCEDURE = NO_CHANGE | CONTINUE
-    
+
 @dataclass
 class TextRender:
     shape: tuple[int, int]
