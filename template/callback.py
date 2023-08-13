@@ -14,7 +14,7 @@ class Callback(CallbackProcess):
             font_size = 16,
             clear = False
         )
-        self.send('TEXT_RENDER', None, RENDER_MSG.ATOMIC_SET_BLOCK_SIZE, self.base_dot)
+        self.send('Screen', None, RENDER_MSG.ATOMIC_SET_BLOCK_SIZE, self.base_dot)
 
         colors = self.user_settings["COLORS"]
 
@@ -61,15 +61,15 @@ class Callback(CallbackProcess):
         self.text = 'ABCDEFGHIJK'
 
     def update(self):
+        if self.updates_count > 0:
+            self.screen.erase_at((3, 3))
         self.screen.put(self.base_dot.variant(
             pos = (3, 3), 
             letter = self.text[self.updates_count%len(self.text)],
-            clear = True
+            clear = False
         ))
         letter = self.text[self.updates_count % len(self.text)]
-        for pos in grid_seq(self.widgets_info['TEXT_RENDER']['shape']):
-            self.screen.put(self.base_dot.variant(pos = pos, letter = letter, clear = True))
-        self.send('TEXT_RENDER', self.screen)
+        self.send('Screen', self.screen)
 
     def on_KEYDOWN_SPACE(self, attrs: dict):
         self.on_KEYDOWN(attrs)
