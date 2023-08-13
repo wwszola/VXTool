@@ -69,13 +69,13 @@ def _app(_SETTINGS: dict):
     quit = _SETTINGS['APP'].get('quit', None)
     real_time = _SETTINGS['APP'].get('real_time', False)
 
-    widgets = {
-        'TEXT_RENDER': TextRender(**_SETTINGS['TEXT_RENDER'], _font_bank = fonts)
-    }
-    widgets_info = dict((
-        (name, {'shape': widget.shape, 'render_q': widget._render_q})
-        for name, widget in widgets.items()
-    ))
+    widgets = {}
+    widgets_info = {}
+    for name, attrs in _SETTINGS['WIDGETS'].items():
+        widget = TextRender(**attrs, _font_bank = fonts)
+        info = {'shape': widget.shape, 'render_q': widget._render_q}
+        widgets[name] = widget
+        widgets_info[name] = info
 
     event_out_q = Queue()
     callback = _SETTINGS['APP']['_callback'](widgets_info, _SETTINGS['USER'], event_out_q)

@@ -1,6 +1,14 @@
 {
+    "WIDGETS": {
+        "Screen": {
+            "shape": [16, 8],
+            "full_res": [720, 720],
+            "backcolor": [255, 255, 255],
+            "block_size": false
+        }
+    },
     "TEXT_RENDER": {
-        "shape": [64, 32],
+        "shape": [91, 91],
         "full_res": [720, 720],
         "backcolor": [255, 255, 255],
         "block_size": false
@@ -12,7 +20,7 @@
         },
         "backcolor": [0, 0, 0],
         "render_size": [720, 720],
-        "FPS": 30,
+        "FPS": 60,
         "quit": 0,
         "record": [0, 0],
         "end_tasks": [],
