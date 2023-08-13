@@ -2,7 +2,7 @@
     "WIDGETS": {
         "Screen": {
             "shape": [16, 8],
-            "full_res": [512, 512],
+            "full_res": [720, 720],
             "backcolor": [255, 255, 255],
             "block_size": false
         }
