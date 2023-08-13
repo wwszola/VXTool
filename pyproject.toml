@@ -1,0 +1,13 @@
+[project]
+name = "VXTool"
+version = "0.1"
+dependencies = [
+    "pygame==2.1.2",
+]
+
+[tool.setuptools.packages.find]
+# All the following settings are optional:
+where = ["."]  # ["."] by default
+include = ["VXTool*"]  # ["*"] by default
+exclude = ["tests"]  # empty by default
+namespaces = false  # true by default

@@ -4,3 +4,6 @@ venv
 
 template/out
 *.ttf
+
+dist
+VXTool.egg-info
