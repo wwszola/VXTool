@@ -10,14 +10,14 @@ from pygame import SRCALPHA
 from .core import Color, BLACK, Dot, Buffer, BoundBuffer
 
 class RENDER_MSG(Flag):
-    DEFAULT = auto()
     CLEAR = auto()
     NO_CHANGE = auto()
     CONTINUE = auto()
     SET_BLOCK_SIZE = auto()
     REGISTER_DOTS = auto()
-    ATOMIC_SET_BLOCK_SIZE = NO_CHANGE | CONTINUE | SET_BLOCK_SIZE    
-
+    DEFAULT = CLEAR
+    PROCEDURE = NO_CHANGE | CONTINUE
+    
 @dataclass
 class TextRender:
     shape: tuple[int, int]
