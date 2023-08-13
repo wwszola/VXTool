@@ -7,12 +7,6 @@
             "block_size": false
         }
     },
-    "TEXT_RENDER": {
-        "shape": [91, 91],
-        "full_res": [720, 720],
-        "backcolor": [255, 255, 255],
-        "block_size": false
-    },
 
     "APP": {
         "preload_fonts": {
