@@ -11,6 +11,7 @@ from .core import Color, BLACK, Dot, Buffer, BoundBuffer
 
 class RENDER_MSG(Flag):
     DEFAULT = auto()
+    CLEAR = auto()
     NO_CHANGE = auto()
     CONTINUE = auto()
     SET_BLOCK_SIZE = auto()
@@ -136,12 +137,11 @@ class TextRender:
                     self.cached_renders[_hash] = self._gen_dot_render(dot)
                 rect = self.block_rect(pos)
                 blits.append((self.cached_renders[_hash], rect))
-            self.screen.fill(self.backcolor)
+
+            if flags & RENDER_MSG.CLEAR:
+                self.screen.fill(self.backcolor)
             self.screen.blits(blits)
 
-        if flags & RENDER_MSG.CONTINUE:
-            return self._render_next(block, timeout)
-        
         self.frames_rendered_count += 1
         return scale(self.screen, self.full_res), flags
 

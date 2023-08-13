@@ -109,12 +109,14 @@ def _app(_SETTINGS: dict):
 
         blits = []
         for widget in widgets.values():
+            block = widget.frames_rendered_count == 0 or not real_time
+            flags = RENDER_MSG.CONTINUE
             try:
-                block = widget.frames_rendered_count == 0 or not real_time
-                surface, flags = widget._render_next(block=block)
-                if surface is not None:
-                    rect = surface.get_rect(center = screen.get_rect().center)
-                    blits.append((surface, rect))
+                while flags & RENDER_MSG.CONTINUE:
+                    surface, flags = widget._render_next(block=block)
+                    if surface is not None:
+                        rect = surface.get_rect(center = screen.get_rect().center)
+                        blits.append((surface, rect))
             except QueueEmpty:
                 pass
         # print(f"WDIGET FRAMES NO. {widget.frames_rendered_count}")
