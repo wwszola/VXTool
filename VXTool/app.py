@@ -50,7 +50,7 @@ def _font_preload(project_dir, font_info):
                 font = Font(project_dir / path, size)
                 family[size] = font            
         except FileNotFoundError as e:
-            print(e.msg)
+            print(e)
     return fonts
 
 def _app(_SETTINGS: dict):
