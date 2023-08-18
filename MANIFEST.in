@@ -1,0 +1,2 @@
+include VXTool_template/settings.json
+include VXTool_template/callback.py

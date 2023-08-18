@@ -6,4 +6,4 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["VXTool"]
+packages = ["VXTool", "VXTool_template"]
