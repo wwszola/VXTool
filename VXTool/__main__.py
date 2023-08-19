@@ -103,6 +103,7 @@ def _new_project_task_call(settings: OrderedDict, msgs: list[LAUNCH_MSG], *args)
     template_dir = Path(path.dirname(__file__), '..', 'VXTool_template')
     try:
         mkdir(project_dir)
+        mkdir(project_dir / 'out')
         with open(template_dir / 'settings.json', 'rb') as template:
             with open(project_dir / 'settings.json', 'wb') as project:
                 project.write(template.read())
