@@ -48,15 +48,12 @@ class Dot:
             self.letter, self.color, self.backcolor,
             self.font_family, self.font_size, self.clear
         ))
-    
-    def __eq__(self, __value: object) -> bool:
-        return self.__hash__() == __value.__hash__()
 
     def variant(self, **kwargs):
         attrs = copy(self.__dict__)
         attrs.update(kwargs)
         return Dot(**attrs)
-    
+
 @dataclass
 class Buffer():
     _container: dict[tuple[int, int], list[Dot]] = field(default_factory = dict)
