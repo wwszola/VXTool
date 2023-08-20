@@ -10,11 +10,11 @@ from pygame import SRCALPHA
 from .core import Color, BLACK, Dot, Buffer, BoundBuffer
 
 class RENDER_MSG(Flag):
-    CLEAR = auto()
-    NO_CHANGE = auto()
-    CONTINUE = auto()
-    SET_BLOCK_SIZE = auto()
-    REGISTER_DOTS = auto()
+    CLEAR = auto() # Clears the screen before drawing content of the entry
+    NO_CHANGE = auto() # "I don't include any content into the entry"
+    CONTINUE = auto() # Process next entry immediately after this one
+    SET_BLOCK_SIZE = auto() # Resizes surface to match new dot size
+    REGISTER_DOTS = auto() # Register dots in _hash_to_dot dictionary
     DEFAULT = CLEAR
     PROCEDURE = NO_CHANGE | CONTINUE
 
