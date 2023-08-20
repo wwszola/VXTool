@@ -21,7 +21,13 @@ Building the package with `build` tool creates a `dist` directory containing fil
 ___
 
 ## Template
-[Template directory](VXTool_template) presents minimal project structure. Its [settings file](VXTool_template/settings.json) contains all settings needed for launch. [Callback file](VXTool_template/callback.py) is your sandbox. By putting these two files and your desired font into a directory, you create valid project.
+[Template directory](VXTool_template) presents minimal project structure. Its [settings file](VXTool_template/settings.json) contains all settings needed for launch. [Callback file](VXTool_template/callback.py) is your sandbox. By putting these two files and your desired font into a directory, you create valid project. \
+To create a new project from this template use:
+```
+py -m VXTool ./path/to_the_new/project/ create
+```
+You will need to add your `*.ttf` font into the project directory and specify its name in `settings.json` in `["APP"]["preload_fonts]` dictionary.
+#### TODO: What font under what license should we include here.
 ___
 
 ### General notes
