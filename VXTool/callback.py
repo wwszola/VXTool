@@ -82,17 +82,19 @@ class CallbackProcess(Process):
             if handler:
                 handler(event.attrs)
     
-    def _buffer_to_args(self, buffer: Buffer):
-        dot_seq = []
+    def _buffer_to_data(self, buffer: Buffer):
+        data = []
         new_dots = []
-        for dot in buffer.dot_seq():                
-            _hash = hash(dot)
-            if _hash not in self._hash_to_dot:
-                self._hash_to_dot[_hash] = dot
-                new_dots.append((_hash, dot))
-            dot_seq.append(dot.pos)
-            dot_seq.append(_hash)
-        return dot_seq, new_dots
+        for pos, dots in buffer._container.items():
+            data.append(pos)
+            data.append(len(dots))
+            for dot in dots:
+                _hash = hash(dot)
+                if _hash not in self._hash_to_dot:
+                    self._hash_to_dot[_hash] = dot
+                    new_dots.append((_hash, dot))
+                data.append(_hash)
+        return data, new_dots
 
     def send(self, widget_name: str, buffer: Buffer, flags: RENDER_MSG = RENDER_MSG.DEFAULT, *args):
         if widget_name in self.widgets_info:
@@ -103,11 +105,11 @@ class CallbackProcess(Process):
                 if flags & RENDER_MSG.REGISTER_DOTS:
                     raise ValueError('add RENDER_MSG.NO_CHANGE to register dots with RENDER_MSG.REGISTER_DOTS')
 
-                dot_seq, new_dots = self._buffer_to_args(buffer)
+                data, new_dots = self._buffer_to_data(buffer)
                 if new_dots:
                     entry[0] = entry[0] | RENDER_MSG.REGISTER_DOTS
                     entry.append(new_dots)
-                entry.append(dot_seq)
+                entry.append(data)
 
             # print(f'CALLBACK ENTRY: {entry}')
             self.widgets_info[widget_name]['render_q'].put(tuple(entry), block=False)
