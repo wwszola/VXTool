@@ -21,7 +21,7 @@ Building the package with `build` tool creates a `dist` directory containing fil
 ___
 
 ## Template
-[Template directory](template) presents minimal project structure. Its [settings file](template/settings.json) contains all settings needed for launch. [Callback file](template/callback.py) is your sandbox. By putting these two files and your desired font into a directory, you create valid project.
+[Template directory](VXTool_template) presents minimal project structure. Its [settings file](VXTool_template/settings.json) contains all settings needed for launch. [Callback file](VXTool_template/callback.py) is your sandbox. By putting these two files and your desired font into a directory, you create valid project.
 ___
 
 ### General notes
