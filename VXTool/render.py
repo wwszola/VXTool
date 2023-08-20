@@ -32,14 +32,12 @@ class TextRender:
     _hash_to_dot: dict[int, Dot] = field(default_factory=dict, kw_only=True)
     _screen: Surface = field(init = False, default = None)
 
-    _last_state: BoundBuffer = field(init = False)
     _render_q: Queue = field(init = False)
     frames_rendered_count: int = field(init = False, default = 0)
 
     def __post_init__(self):
         if self.block_size:
             self.resize_screen()
-        self._last_state = BoundBuffer(region = self.grid_rect)
         self._render_q = Queue()
 
     @property
@@ -92,10 +90,6 @@ class TextRender:
         block_render = block_render.convert_alpha()
         return block_render
 
-    def _register_dot(self, dot: Dot):
-        _hash = hash(dot)
-        self._hash_to_dot.setdefault(_hash, dot)
-
     def _render_next(self, block = True, timeout: float = None):
         entry = self._render_q.get(block, timeout)
         # print(f"TEXTRENDER ENTRY: {entry}")
@@ -114,19 +108,6 @@ class TextRender:
                 self._hash_to_dot[_hash] = dot
 
         if not flags & RENDER_MSG.NO_CHANGE:
-            # buffer = BoundBuffer(region=self.grid_rect)
-            # buffer.merge(entry[-1])
-            # diff, clear_mask = self._last_state.diff(buffer)
-            # # print('RENDER DIFF: ', diff, clear_mask)
-            
-            # if diff.is_empty() and len(clear_mask) == 0:
-            #     return None, flags
-            
-            # all_blits = self._all_blits(diff, clear_mask)
-            # # print('ALL BLITS: ', all_blits)
-            # self.screen.blits(all_blits)
-            # self._last_state = buffer
-
             data = args.pop(0)
             data_it = iter(data)
             blits = []
@@ -150,29 +131,3 @@ class TextRender:
 
         self.frames_rendered_count += 1
         return scale(self.screen, self.full_res), flags
-
-    def _all_blits(self, diff: Buffer, clear_mask: set[tuple[int, int]]):
-        blits = []
-        
-        empty_dot = self.cached_renders["_EMPTY"]
-        for pos in clear_mask:
-            design_block = self.block_rect(pos)
-            blits.append((empty_dot, design_block))
-        
-        for pos, dots in diff._container.items():
-            design_block = self.block_rect(pos)
-            for dot in dots:
-                dot_render = self._get_render(dot)
-                blits.append((dot_render, design_block))
-        return blits        
-
-    def clear(self, region: Rect = None):
-        if not region:
-            region = self.grid_rect
-        region = Rect(
-            region.left * self.block_size[0],
-            region.top * self.block_size[1],
-            region.width * self.block_size[0],
-            region.height * self.block_size[1]
-        )
-        self.screen.fill(self.backcolor, region)     
