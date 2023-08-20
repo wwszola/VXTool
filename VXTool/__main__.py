@@ -72,7 +72,10 @@ def _main():
     # second argument is name of the command/task you want to use
     if len(argv) > 2 and argv[2] in _SETTINGS['TASKS'].keys():
         call = _SETTINGS['TASKS'].get(argv[2], None)
-        if call: call(_SETTINGS, msgs)
+        if call: 
+            call(_SETTINGS, msgs)
+        else:
+            msgs.extend((LAUNCH_MSG.TASK_FAIL, f'unknown command {argv[2]}'))
         return msgs
 
     # app is able to launch when settings and callback files are loaded
