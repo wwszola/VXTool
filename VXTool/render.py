@@ -129,5 +129,8 @@ class TextRender:
                 self.screen.fill(self.backcolor)
             self.screen.blits(blits)
 
+        if flags & RENDER_MSG.NO_CHANGE or flags & RENDER_MSG.CONTINUE:
+            return None, flags
+
         self.frames_rendered_count += 1
         return scale(self.screen, self.full_res), flags
