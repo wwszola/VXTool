@@ -67,7 +67,6 @@ class Callback(CallbackProcess):
             letter = self.text[self.updates_count%len(self.text)],
             clear = False
         ))
-        letter = self.text[self.updates_count % len(self.text)]
         self.send('Screen', self.screen)
 
     def on_KEYDOWN_SPACE(self, attrs: dict):
