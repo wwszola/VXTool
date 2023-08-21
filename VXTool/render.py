@@ -114,14 +114,14 @@ class TextRender:
             while True:
                 try:
                     pos = next(data_it)
+                    rect = self.block_rect(pos)
                     length = next(data_it)
                     for _ in range(length):
                         _hash = next(data_it)
                         if _hash not in self.cached_renders:
                             dot = self._hash_to_dot[_hash]
                             self.cached_renders[_hash] = self._gen_dot_render(dot)
-                    rect = self.block_rect(pos)
-                    blits.append((self.cached_renders[_hash], rect))
+                        blits.append((self.cached_renders[_hash], rect))
                 except StopIteration:
                     break        
 
