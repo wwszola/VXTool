@@ -73,10 +73,10 @@ class TextRender:
 
         backcolor = dot.backcolor 
         if not dot.clear and not dot.backcolor:
-            backcolor = (0, 0, 0, 0)
+            backcolor = Color(0, 0, 0, 0)
         if dot.clear and not dot.backcolor:
             backcolor = self.backcolor
-        block_render.fill(backcolor)            
+        block_render.fill(backcolor)
 
         font = self._font_bank[dot.font_family][dot.font_size]
 
