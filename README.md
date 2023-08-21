@@ -30,7 +30,7 @@ You will need to add your `*.ttf` font into the project directory and specify it
 #### TODO: What font under what license should we include here.
 ___
 
-### General notes
+## General notes
 - Main spawns App and Callback
 #### What is sent through render queue
 - Callback doesn't send whole buffer, only pos and hash list 
@@ -42,18 +42,35 @@ ___
 - Callback submits a diff to the queue, TextRender blits needed dots.
 #### Sync
 - App gathers events every window frame, while displaying last available TextRender surface.
-- (__didnt try not waiting__) Callback chooses to wait or not for new InputFrame.
-- widget discards callback frames up to the last one if their counters don't match 
+
 #### Dot
 - TextRender font lookup by fontname and size.
 
+#### Animation
+- Dots do not need to be immutable
+- Changing dot's position requires removing from the buffer and putting again after change
+- Dot as particle
+- - life time
+- ex.
+- - at counter 0 set letter 'A' color RED
+- - at counter 5 set letter 'SURPRISE' - split into single instructions
+- - at counter 5 set color RED
+- - at counter 8 set color BLUE
+- - at counter 13 spawn dot DotClass args
+
 ## TODO:
 - allow for positioning widgets
-- document and test sync variants
+- implement properly, document and test sync variants
 - handle mouse events (screen_to_grid)
-- Buffer.advance for animation
-- Position as (pygame.math.Vector2)
+- backcolor transparency isn't transparent
 - Loading png tilesets
+- Position as (pygame.math.Vector2)
+### Sync
+- (__didnt try not waiting__) Callback chooses to wait or not for new InputFrame.
+- widget discards callback frames up to the last one if their counters don't match 
+- __Moving__ the window causes to crash because of some blocking timeout?
+
+### Ideas
 - Interface:
 - - pause/play/reload
 - Live music performance:
