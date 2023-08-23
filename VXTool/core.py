@@ -50,8 +50,19 @@ class Dot:
             self.font_family, self.font_size, self.clear
         ))
 
-    def variant(self, **kwargs):
-        new_dot = Dot.__new__(Dot)
+    def variant(self, variant_class = None, **kwargs):
+        if variant_class is None:
+            variant_class = self.__class__
+        new_dot = variant_class()
+        for name, value in self.__dict__.items():
+            if not hasattr(new_dot, name):
+                break
+            if name in kwargs:
+                setattr(new_dot, name, kwargs[name])
+            else:
+                setattr(new_dot, name, value)
+        return new_dot
+
         attr_names = ['pos', 'letter', 'color', 'backcolor', 'font_family', 'font_size', 'clear']
         for name in attr_names:
             if name in kwargs:

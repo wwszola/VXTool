@@ -91,7 +91,7 @@ class CallbackProcess(Process):
             for dot in dots:
                 _hash = hash(dot)
                 if _hash not in self._hash_to_dot:
-                    real_dot = dot.variant() if dot.__class__ != Dot else dot
+                    real_dot = dot.variant(Dot) if dot.__class__ != Dot else dot
                     self._hash_to_dot[_hash] = real_dot
                     new_dots.append((_hash, real_dot))
                 data.append(_hash)
