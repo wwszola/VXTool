@@ -16,7 +16,7 @@
         "render_size": [720, 720],
         "FPS": 24,
         "quit": 0,
-        "record": [0, 5],
+        "record": [0, 0],
         "end_tasks": [],
         "real_time": false
     },

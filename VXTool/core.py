@@ -181,7 +181,7 @@ class ANIMATION_OP(Enum):
     SET = auto()
     STOP = auto()
     JMP = auto()
-    PROC = auto()
+    MOVE = auto()
 
 class AnimationOp(NamedTuple):
     counter: int
@@ -197,7 +197,8 @@ class AnimatedDot(Dot):
         self.instructions: list[AnimationOp] = []
         self.frame_counter = 0
         self.instruction_pointer = 0
-        
+        self.new_pos: tuple[int, int] = None
+
     def _add_op(self, new_op: AnimationOp):
         idx = 0
         for op in self.instructions:
@@ -225,9 +226,14 @@ class AnimatedDot(Dot):
             dst_time = 0
         self._add_op(AnimationOp(op_time, ANIMATION_OP.JMP, (dst_time,)))
 
-    def _find_instruction_pointer(self):
+    def op_move(self, delta_time: int, move_vector: tuple[int, int], repeat: int = 1):
+        op_time = self.frame_counter + delta_time
+        for i in range(repeat):
+            self._add_op(AnimationOp(op_time + i, ANIMATION_OP.MOVE, (move_vector,)))
+
+    def _find_instruction_pointer(self, frame_counter):
         for i, op in enumerate(self.instructions):
-            if op.counter <= self.frame_counter:
+            if op.counter <= frame_counter:
                 return i
 
     def advance(self):
@@ -243,8 +249,9 @@ class AnimatedDot(Dot):
                     setattr(self, op.args[0], op.args[1])
                 case ANIMATION_OP.JMP:
                     self.frame_counter = op.args[0]
-                    self.instruction_pointer = self._find_instruction_pointer() - 1
-
+                    self.instruction_pointer = self._find_instruction_pointer(op.args[0]) - 1
+                case ANIMATION_OP.MOVE:
+                    self.new_pos = self.pos[0] + op.args[0][0], self.pos[1] + op.args[0][1]
             self.instruction_pointer += 1
         self.frame_counter += 1
         return result
@@ -259,12 +266,19 @@ class AnimatedBuffer(Buffer):
         super().put(dot)
         if isinstance(dot, AnimatedDot):
             self.animated_dots.append(dot)
-        
+
     def advance(self):
         dead_dots_idx = []
         for i, dot in enumerate(self.animated_dots):
-            if not dot.advance():
+            result = dot.advance()
+            if not result:
                 dead_dots_idx.append((i, dot))
+                continue
+            if dot.new_pos:
+                super().erase(dot)
+                dot.pos = dot.new_pos
+                dot.new_pos = None
+                super().put(dot)
         for i, (idx, dot) in enumerate(dead_dots_idx):
             self.animated_dots.pop(idx - i) # removing elements starts from the left, dead_dots_idx is sorted
             self.erase(dot)

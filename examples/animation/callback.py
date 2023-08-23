@@ -20,10 +20,10 @@ class Callback(CallbackProcess):
 
         self.pulse = AnimatedDot(**self.base_dot.__dict__)
         self.pulse.pos = (5, 5)
-        self.pulse.op_set(0, 'letter', '?')
-        self.pulse.op_set(0, 'font_size', font_sizes[::-1])
-        self.pulse.op_set(len(font_sizes) + 2, 'font_size', font_sizes)
-        self.pulse.op_jmp(2*len(font_sizes) + 4, 0)
+        self.pulse.op_set(0, 'letter', 'ABCD')
+        self.pulse.op_move(1, (1, 0), 3)
+        self.pulse.op_move(4, (-3, 0))
+        self.pulse.op_jmp(4, 0)
 
         self.screen = AnimatedBuffer()
         self.screen.put(self.pulse)
