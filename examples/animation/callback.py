@@ -18,8 +18,7 @@ class Callback(CallbackProcess):
 
         colors = self.user_settings["COLORS"]
 
-        self.pulse = AnimatedDot(**self.base_dot.__dict__)
-        self.pulse.pos = (5, 5)
+        self.pulse = self.base_dot.variant(AnimatedDot, pos = (5, 5))
         self.pulse.op_set(0, 'letter', 'ABCD')
         self.pulse.op_move(1, (1, 0), 3)
         self.pulse.op_move(4, (-3, 0))
