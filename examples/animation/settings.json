@@ -1,0 +1,31 @@
+{
+    "WIDGETS": {
+        "Screen": {
+            "shape": [16, 8],
+            "full_res": [512, 512],
+            "backcolor": [255, 255, 255],
+            "block_size": false
+        }
+    },
+
+    "APP": {
+        "preload_fonts": {
+            "UniVGA16": ["UniVGA16.ttf", 24, 22, 20, 18, 16]
+        },
+        "backcolor": [0, 0, 0],
+        "render_size": [720, 720],
+        "FPS": 24,
+        "quit": 0,
+        "record": [0, 5],
+        "end_tasks": [],
+        "real_time": false
+    },
+
+    "USER": {
+        "COLORS": {
+            "RED": [255, 0, 0],
+            "GREEN": [0, 255, 0],
+            "BLUE": [0, 0, 255]
+        }
+    }
+}
