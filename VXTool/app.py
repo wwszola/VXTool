@@ -83,6 +83,7 @@ def _app(_SETTINGS: dict):
 
     running = True
     clock = Clock()
+    clock.tick(_SETTINGS['APP']['FPS'])
     frame = 0
     while running:
         running = not pygame.event.peek(QUIT)
