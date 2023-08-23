@@ -50,9 +50,14 @@ class Dot:
         ))
 
     def variant(self, **kwargs):
-        attrs = copy(self.__dict__)
-        attrs.update(kwargs)
-        return Dot(**attrs)
+        new_dot = Dot.__new__(Dot)
+        attr_names = ['pos', 'letter', 'color', 'backcolor', 'font_family', 'font_size', 'clear']
+        for name in attr_names:
+            if name in kwargs:
+                setattr(new_dot, name, kwargs[name])
+            else:
+                setattr(new_dot, name, getattr(self, name))
+        return new_dot
 
 @dataclass
 class Buffer():
