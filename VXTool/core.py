@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
-from typing import Iterator, Generator
+from typing import Iterator, Generator, NamedTuple, Iterable
 from copy import copy
+from enum import Enum, auto
 
 from pygame import Color as PyGameColor
 from pygame import Rect
@@ -175,3 +176,96 @@ class BoundBuffer(Buffer):
     def put(self, dot: Dot):
         if self.region.collidepoint(dot.pos):
             super().put(dot)
+
+class ANIMATION_OP(Enum):
+    SET = auto()
+    STOP = auto()
+    JMP = auto()
+    PROC = auto()
+
+class AnimationOp(NamedTuple):
+    counter: int
+    op_type: ANIMATION_OP
+    args: list
+
+    def __str__(self):
+        return f"{self.counter}: {self.op_type.name} {self.args}"
+
+class AnimatedDot(Dot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.instructions: list[AnimationOp] = []
+        self.frame_counter = 0
+        self.instruction_pointer = 0
+        
+    def _add_op(self, new_op: AnimationOp):
+        idx = 0
+        for op in self.instructions:
+            if new_op.counter >= op.counter:
+                idx += 1
+            else:
+                break
+        self.instructions.insert(idx, new_op)
+
+    def op_set(self, delta_time: int, attr_name: str, value):
+        if hasattr(self, attr_name):
+            if isinstance(value, Iterable):
+                for i, x in enumerate(value):
+                    self._add_op(AnimationOp(self.frame_counter + delta_time + i, ANIMATION_OP.SET, (attr_name, x)))
+            else:
+                self._add_op(AnimationOp(self.frame_counter + delta_time, ANIMATION_OP.SET, (attr_name, value)))
+
+    def op_stop(self, delta_time):
+        self._add_op(AnimationOp(self.frame_counter + delta_time, ANIMATION_OP.STOP, None))
+
+    def op_jmp(self, delta_time: int, dst_delta_time: int):
+        op_time = self.frame_counter + delta_time
+        dst_time = self.frame_counter + dst_delta_time
+        if dst_time < 0:
+            dst_time = 0
+        self._add_op(AnimationOp(op_time, ANIMATION_OP.JMP, (dst_time,)))
+
+    def _find_instruction_pointer(self):
+        for i, op in enumerate(self.instructions):
+            if op.counter <= self.frame_counter:
+                return i
+
+    def advance(self):
+        result = True
+        while result and self.instructions:
+            op = self.instructions[self.instruction_pointer]
+            if self.frame_counter < op.counter: # does nothing when no instructions for now
+                break
+            match op.op_type:
+                case ANIMATION_OP.STOP:
+                    result = False
+                case ANIMATION_OP.SET:
+                    setattr(self, op.args[0], op.args[1])
+                case ANIMATION_OP.JMP:
+                    self.frame_counter = op.args[0]
+                    self.instruction_pointer = self._find_instruction_pointer() - 1
+
+            self.instruction_pointer += 1
+        self.frame_counter += 1
+        return result
+    
+class AnimatedBuffer(Buffer):
+    def __init__(self):
+        super().__init__()
+        self.animated_dots: list[AnimatedDot] = []
+        self.counter = 0
+
+    def put(self, dot: Dot):
+        super().put(dot)
+        if isinstance(dot, AnimatedDot):
+            self.animated_dots.append(dot)
+        
+    def advance(self):
+        dead_dots_idx = []
+        for i, dot in enumerate(self.animated_dots):
+            if not dot.advance():
+                dead_dots_idx.append((i, dot))
+        for i, (idx, dot) in enumerate(dead_dots_idx):
+            self.animated_dots.pop(idx - i) # removing elements starts from the left, dead_dots_idx is sorted
+            self.erase(dot)
+        self.counter += 1
