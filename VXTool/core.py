@@ -63,10 +63,12 @@ class Dot:
                 setattr(new_dot, name, value)
         return new_dot
 
-@dataclass
 class Buffer():
-    _container: dict[tuple[int, int], list[Dot]] = field(default_factory = dict)
-    
+    def __init__(self, dot_seq: Iterator[Dot] = []):
+        self._container: dict[tuple[int, int], list[Dot]] = dict()
+        if dot_seq:
+            self.extend(dot_seq)
+
     def is_empty(self):
         return all(len(local) == 0 for local in self._container.values())
 
@@ -150,12 +152,6 @@ class Buffer():
     def dot_seq(self) -> Generator:
         for pos, dots in self._container.items():
             yield from dots
-
-    @staticmethod
-    def from_dot_seq(dots):
-        buffer = Buffer()
-        buffer.extend(dots)
-        return buffer
 
     def mask(self):
         yield from (key for key, value in self._container.items() if value)
