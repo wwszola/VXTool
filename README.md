@@ -49,14 +49,9 @@ ___
 #### Animation
 - Dots do not need to be immutable
 - Changing dot's position requires removing from the buffer and putting again after change
-- Dot as particle
-- - life time
-- ex.
-- - at counter 0 set letter 'A' color RED
-- - at counter 5 set letter 'SURPRISE' - split into single instructions
-- - at counter 5 set color RED
-- - at counter 8 set color BLUE
-- - at counter 13 spawn dot DotClass args
+- variant / creation, duplication of animated dots is important
+- reminder: this doesn't need to be turing complete
+- how to spawn the falling star
 
 ## TODO:
 - allow for positioning widgets
