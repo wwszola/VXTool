@@ -10,7 +10,7 @@
 
     "APP": {
         "preload_fonts": {
-            "UniVGA16": ["UniVGA16.ttf", 24, 22, 20, 18, 16]
+            "UniVGA16": ["UniVGA16.ttf", 16]
         },
         "backcolor": [0, 0, 0],
         "render_size": [720, 720],

@@ -5,13 +5,12 @@ from VXTool.core import Color, Dot, Buffer, AnimatedDot, AnimatedBuffer
 
 class Callback(CallbackProcess):
     def setup(self):
-        font_sizes = [16 + i*2 for i in range(5)]
         self.base_dot: Dot = Dot(
             pos = (-1, -1), 
             letter = '█', 
             color = Color(0, 0, 0), 
             font_family = "UniVGA16",  
-            font_size = font_sizes[-1],
+            font_size = 16,
             clear = True
         )
         self.send('Screen', None, RENDER_MSG.PROCEDURE | RENDER_MSG.SET_BLOCK_SIZE, self.base_dot)
@@ -26,7 +25,6 @@ class Callback(CallbackProcess):
 
         self.screen = AnimatedBuffer()
         self.screen.put(self.pulse)
-
         
     def update(self):
         self.screen.advance()
