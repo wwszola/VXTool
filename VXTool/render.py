@@ -65,8 +65,11 @@ class TextRender:
     def grid_rect(self) -> Rect:
         return Rect((0, 0), self.shape)
 
-    def get_dot_size(self, dot: Dot) -> Font:
-        return self._font_bank[dot.font_family][dot.font_size].size(dot.letter)
+    def get_font(self, name: str, size: int) -> Font:
+        return self._font_bank[name, size]
+    
+    def get_dot_size(self, dot: Dot):
+        return self.get_font(dot.font_family, dot.font_size).size(dot.letter)
 
     def _gen_dot_render(self, dot: Dot) -> Surface:
         block_render = Surface(self.block_size, SRCALPHA)
@@ -78,7 +81,7 @@ class TextRender:
             backcolor = self.backcolor
         block_render.fill(backcolor)
 
-        font = self._font_bank[dot.font_family][dot.font_size]
+        font = self.get_font(dot.font_family, dot.font_size)
 
         dot_render = font.render(dot.letter, False, dot.color)
         dot_render = dot_render.convert_alpha(block_render)

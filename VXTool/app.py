@@ -42,16 +42,20 @@ class PickableEvent:
 
 def _font_preload(project_dir, font_info):
     fonts = {}
+    fonts_info = {}
     for name, data in font_info.items():
         path = data[0]
-        family = fonts[name] = {}
-        try: 
-            for size in data[1:]:
+        sizes = data[1:]
+        try:
+            for size in sizes:
                 font = Font(project_dir / path, size)
-                family[size] = font            
+                fonts[name, size] = font
+                fonts_info[name, size] = {
+                    "size": font.size('█')
+                }
         except FileNotFoundError as e:
             print(e)
-    return fonts
+    return fonts, fonts_info
 
 def _app(_SETTINGS: dict):
     print(f"APP settings: {_SETTINGS['APP']}")
@@ -63,7 +67,7 @@ def _app(_SETTINGS: dict):
     screen = pygame.display.set_mode(render_size)
 
     pygame.font.init()
-    fonts = _font_preload(project_dir, _SETTINGS['APP']['preload_fonts'])
+    fonts, fonts_info = _font_preload(project_dir, _SETTINGS['APP']['preload_fonts'])
 
     record = _SETTINGS['APP'].get('record', None)
     quit = _SETTINGS['APP'].get('quit', None)
@@ -78,7 +82,9 @@ def _app(_SETTINGS: dict):
         widgets_info[name] = info
 
     event_out_q = Queue()
-    callback = _SETTINGS['APP']['_callback'](widgets_info, _SETTINGS['USER'], event_out_q)
+    callback = _SETTINGS['APP']['_callback'](
+        widgets_info, fonts_info, _SETTINGS['USER'], event_out_q
+    )
     callback.start()
 
     running = True

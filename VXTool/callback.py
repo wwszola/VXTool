@@ -16,9 +16,10 @@ class CallbackProcess(Process):
         pattern = r"^on_(?P<name>[a-z0-9]+)(?:_{1}(?P<attr>\w+))*$",
         flags = re.IGNORECASE
     )
-    def __init__(self, widgets_info: dict, user_settings: dict, event_frame_q: Queue):
+    def __init__(self, widgets_info: dict, fonts_info: dict, user_settings: dict, event_frame_q: Queue):
         super().__init__()
         self.widgets_info: dict = widgets_info
+        self.fonts_info: dict = fonts_info
         self.user_settings: dict = user_settings
         self.event_frame_q: Queue[list[PickableEvent]] = event_frame_q
         self.updates_count: int = 0
@@ -28,7 +29,7 @@ class CallbackProcess(Process):
 
         self._hash_to_dot: dict[int, Dot] = dict()
 
-        print(f"\nCallback setup: {self.widgets_info} {self.user_settings} {self._event_handlers.keys()}")
+        print(f"\nCallback setup: {self.widgets_info} {self.fonts_info} {self.user_settings} {self._event_handlers.keys()} ")
 
         self.running = False
         self.setup()
