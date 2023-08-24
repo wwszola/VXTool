@@ -63,14 +63,6 @@ class Dot:
                 setattr(new_dot, name, value)
         return new_dot
 
-        attr_names = ['pos', 'letter', 'color', 'backcolor', 'font_family', 'font_size', 'clear']
-        for name in attr_names:
-            if name in kwargs:
-                setattr(new_dot, name, kwargs[name])
-            else:
-                setattr(new_dot, name, getattr(self, name))
-        return new_dot
-
 @dataclass
 class Buffer():
     _container: dict[tuple[int, int], list[Dot]] = field(default_factory = dict)
