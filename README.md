@@ -21,13 +21,18 @@ Building the package with `build` tool creates a `dist` directory containing fil
 ___
 
 ## Template
-[Template directory](VXTool_template) presents minimal project structure. Its [settings file](VXTool_template/settings.json) contains all settings needed for launch. [Callback file](VXTool_template/callback.py) is your sandbox. By putting these two files and your desired font into a directory, you create valid project. \
+[Template directory](VXTool_template) presents minimal project structure. Its [settings file](VXTool_template/settings.json) contains all settings needed for launch. [Callback file](VXTool_template/callback.py) is your sandbox.\
 To create a new project from this template use:
 ```
 py -m VXTool ./path/to_the_new/project/ create
 ```
-You will need to add your `*.ttf` font into the project directory and specify its name in `settings.json` in `["APP"]["preload_fonts]` dictionary.
-#### TODO: What font under what license should we include here.
+A font file `UniVGA16.ttf` is provided in the template project. \
+You may add your `*.ttf` font into the project directory and specify its name in `settings.json` under `["APP"]["preload_fonts"]`.
+
+### UniVGA16 font 
+Template project and examples contain `UniVGA16.ttf` font file. The file originally can be accessed [here](https://github.com/mirror/reactos/blob/c6d2b35ffc91e09f50dfb214ea58237509329d6b/reactos/media/fonts/UniVGA16.ttf) under attached [license](https://github.com/mirror/reactos/tree/master/reactos/media/fonts/doc/UniVGA). Originally created by [Dmitry Bolkhovityanov](https://www.inp.nsk.su/~bolkhov/files/fonts/univga/). The font is also a part of [reactOS](https://reactos.org/). 
+
+
 ___
 
 ## General notes

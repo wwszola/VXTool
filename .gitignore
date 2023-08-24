@@ -4,6 +4,7 @@ venv
 
 template/out
 *.ttf
+!UniVGA16.ttf
 
 dist
 VXTool.egg-info
