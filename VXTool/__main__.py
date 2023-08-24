@@ -127,6 +127,7 @@ def _new_project_task_call(settings: OrderedDict, msgs: list[LAUNCH_MSG], *args)
         mkdir(project_dir / 'out')
         copyfile(template_dir/'settings.json', project_dir/'settings.json')
         copyfile(template_dir/'callback.py', project_dir/'callback.py')
+        copyfile(template_dir/'UniVGA16.ttf', project_dir/'UniVGA16.ttf')        
         msgs.extend((LAUNCH_MSG.TASK_SUCCESS, "_new_project_task_call"))
     except (SameFileError, OSError) as e:
         print("Failed to create a new project due to error:")
