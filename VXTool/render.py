@@ -7,7 +7,7 @@ from pygame.font import Font
 from pygame.transform import scale
 from pygame import SRCALPHA
 
-from .core import Color, BLACK, Dot, Buffer, BoundBuffer
+from .core import Color, BLACK, Dot, Buffer
 
 class RENDER_MSG(Flag):
     CLEAR = auto() # Clears the screen before drawing content of the entry

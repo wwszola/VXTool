@@ -78,30 +78,6 @@ class Buffer():
             local.clear()
         local.append(dot)
 
-    def diff(self, other):
-        diff: Buffer = Buffer()
-        clear_mask = set(self._container.keys()) - (other._container.keys())
-        for pos in other._container.keys():
-            if pos not in self._container:
-                clear_mask.add(pos)
-                diff._container[pos] = other._container[pos]
-            else:
-                self_local = self._container[pos]
-                other_local = other._container[pos]
-                i = 0
-                for (dot1, dot2) in zip(self_local, other_local):
-                    if dot1 != dot2:
-                        break
-                    i += 1
-                if i == len(self_local):
-                    if i != len(other_local):
-                        diff._container[pos] = other_local[i:]
-                else:
-                    clear_mask.add(pos)
-                    diff._container[pos] = other_local[:]
-
-        return diff, clear_mask
-
     def extend(self, dots: Iterator[Dot]):
         for dot in dots:
             self.put(dot)
@@ -158,23 +134,7 @@ class Buffer():
 
     def cut(self, mask: Iterator[tuple[int, int]]):
         for pos in mask:
-            self._container[pos] = []
-
-    def translated(self, vec):
-        sibling = Buffer()
-        for dot in self.dot_seq():
-            pos = dot.pos
-            new_pos = pos[0] + vec[0], pos[1] + vec[1]
-            sibling.put(dot.variant(pos = new_pos))
-        return sibling
-
-@dataclass
-class BoundBuffer(Buffer):
-    region: Rect = field(kw_only = True)
-
-    def put(self, dot: Dot):
-        if self.region.collidepoint(dot.pos):
-            super().put(dot)
+            if pos in self._container: del self._container[pos]
 
 class ANIMATION_OP(Enum):
     SET = auto()
