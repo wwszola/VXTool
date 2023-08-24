@@ -119,19 +119,16 @@ def _new_project_task_call(settings: OrderedDict, msgs: list[LAUNCH_MSG], *args)
         msgs.extend((LAUNCH_MSG.TASK_FAIL, "_new_project_task_call"))
 
     from os import mkdir, path
+    from shutil import copyfile, SameFileError
     project_dir = settings['USER']['project_dir']
     template_dir = Path(path.dirname(__file__), '..', 'VXTool_template')
     try:
         mkdir(project_dir)
         mkdir(project_dir / 'out')
-        with open(template_dir / 'settings.json', 'rb') as template:
-            with open(project_dir / 'settings.json', 'wb') as project:
-                project.write(template.read())
-        with open(template_dir / 'callback.py', 'rb') as template:
-            with open(project_dir / 'callback.py', 'wb') as project:
-                project.write(template.read())
+        copyfile(template_dir/'settings.json', project_dir/'settings.json')
+        copyfile(template_dir/'callback.py', project_dir/'callback.py')
         msgs.extend((LAUNCH_MSG.TASK_SUCCESS, "_new_project_task_call"))
-    except (FileExistsError, FileNotFoundError, OSError) as e:
+    except (SameFileError, OSError) as e:
         print("Failed to create a new project due to error:")
         print(e)
         msgs.extend((LAUNCH_MSG.TASK_FAIL, "_new_project_task_call"))
