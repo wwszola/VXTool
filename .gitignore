@@ -2,7 +2,9 @@ __pycache__
 venv
 .vscode
 
-template/out
+VXTool_template/out
+examples/*/out
+
 *.ttf
 !UniVGA16.ttf
 
