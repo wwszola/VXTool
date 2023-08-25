@@ -15,11 +15,15 @@ class Callback(CallbackProcess):
             clear = True
         )
 
-        # At least once, before drawing anything you must send entry
-        # with RENDER_MSG.PROCEDURE | RENDER_MSG.SET_BLOCK_SIZE flag,
-        # to prepare drawing surfaces.
+        # Before drawing, a block size must be provided.
+        # If project's settings ["block_size"] hasn't been set
+        # you need to proceed with the following instructions.
+
+        # Send entry with flag RENDER_MSG.PROCEDURE | RENDER_MSG.SET_BLOCK_SIZE
+        # at least once, preferably in this setup method 
         # Argument to this entry may be either tuple[int, int] or Dot
-        # The basic solution is to pass a Dot
+
+        # The basic solution A is to pass a Dot
         self.send('Screen', None, RENDER_MSG.PROCEDURE | RENDER_MSG.SET_BLOCK_SIZE, self.base_dot)
 
         self.shape = self.widgets_info['Screen']['shape']
@@ -44,5 +48,3 @@ class Callback(CallbackProcess):
         # Solution B
         # Use a tuple[int, int]. Then block_size is the value.
         self.send('Screen', None, RENDER_MSG.PROCEDURE | RENDER_MSG.SET_BLOCK_SIZE, block_size)
-
-
