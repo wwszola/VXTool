@@ -53,7 +53,7 @@ class TextRender:
         self.screen.fill(self.backcolor)
         empty_block = Surface(self.block_size, SRCALPHA)
         empty_block.fill(self.backcolor)
-        self.cached_renders['_EMPTY'] = empty_block
+        self.cached_renders.clear()
 
     def block_rect(self, pos: tuple[int, int]) -> Rect:
         return Rect(
@@ -100,9 +100,12 @@ class TextRender:
         args = list(entry[1:])
 
         if flags & RENDER_MSG.SET_BLOCK_SIZE:
-            dot = args.pop(0)
-            block_size = self.get_dot_size(dot)
-            self.block_size = block_size
+            value = args.pop(0)
+            if isinstance(value, Dot):
+                block_size = self.get_dot_size(value)
+                self.block_size = block_size
+            else:
+                self.block_size = value
             self.resize_screen()
 
         if flags & RENDER_MSG.REGISTER_DOTS:
