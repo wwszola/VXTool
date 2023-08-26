@@ -15,6 +15,11 @@ class Callback(CallbackProcess):
             clear = True
         )
 
+        # A block is an area that dot's render is drawn to.
+        # For two dots: Dot(pos=(0, 0)), Dot(pos=(1, 0))
+        # Second dot's block is adjacent on the left
+        # to the first dot's block.
+
         # Before drawing, a block size must be provided.
         # If project's settings ["block_size"] hasn't been set
         # you need to proceed with the following instructions.
