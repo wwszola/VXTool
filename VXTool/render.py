@@ -10,12 +10,12 @@ from pygame import SRCALPHA
 from .core import Color, BLACK, Dot, Buffer
 
 class RENDER_MSG(Flag):
-    CLEAR = auto() # Clears the screen before drawing content of the entry
+    NO_CLEAR = auto() # Doesn't clear the screen before drawing content of the entry
     NO_CHANGE = auto() # "I don't include any content into the entry"
     CONTINUE = auto() # Process next entry immediately after this one
     SET_BLOCK_SIZE = auto() # Resizes surface to match new dot size
     REGISTER_DOTS = auto() # Register dots in _hash_to_dot dictionary
-    DEFAULT = CLEAR
+    DEFAULT = auto()
     PROCEDURE = NO_CHANGE | CONTINUE
 
 @dataclass
@@ -131,7 +131,7 @@ class TextRender:
                 except StopIteration:
                     break        
 
-            if flags & RENDER_MSG.CLEAR:
+            if not flags & RENDER_MSG.NO_CLEAR:
                 self.screen.fill(self.backcolor)
             self.screen.blits(blits)
 
