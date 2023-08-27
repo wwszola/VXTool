@@ -4,7 +4,7 @@ from enum import Flag, auto
 
 from pygame import Surface, Rect
 from pygame.font import Font
-from pygame.transform import scale
+from pygame import transform
 from pygame import SRCALPHA
 
 from .core import Color, BLACK, Dot, Buffer
@@ -73,6 +73,7 @@ class TextRender:
 
     def _gen_dot_render(self, dot: Dot) -> Surface:
         block_render = Surface(self.block_size, SRCALPHA)
+        block_rect = block_render.get_rect()
 
         backcolor = dot.backcolor 
         if not dot.clear and not dot.backcolor:
@@ -86,10 +87,16 @@ class TextRender:
         dot_render = font.render(dot.letter, False, dot.color)
         dot_render = dot_render.convert_alpha(block_render)
         dot_render.set_alpha(dot.color.a)
-
-        rect = dot_render.get_rect(center = block_render.get_rect().center)
-        block_render.blit(dot_render, rect)
         
+        align = dot.align.strip().lower()
+        match align:
+            case 'stretch':
+                dot_render = transform.scale(dot_render, block_rect.size)
+                rect = block_rect
+            case 'center' | _:
+                rect = dot_render.get_rect(center = block_rect.center)
+
+        block_render.blit(dot_render, rect)
         block_render = block_render.convert_alpha()
         return block_render
 
@@ -139,4 +146,4 @@ class TextRender:
             return None, flags
 
         self.frames_rendered_count += 1
-        return scale(self.screen, self.full_res), flags
+        return transform.scale(self.screen, self.full_res), flags

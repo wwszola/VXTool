@@ -23,7 +23,7 @@ class Dot:
     def __init__(self, pos: tuple[int, int] = None, letter: str = None,
             color: Color = None, backcolor: Color = None, 
             font_family: str | None = None, font_size: int = None,
-            clear: bool = True,
+            clear: bool = True, align: str = 'center'
             ):
         self.pos: tuple[int, int] = pos
         self.letter: str = letter
@@ -32,6 +32,7 @@ class Dot:
         self.font_family: str = font_family
         self.font_size: str = font_size
         self.clear: str = clear
+        self.align: str = align
 
     def __str__(self) -> str:
         attrs = []
@@ -47,7 +48,8 @@ class Dot:
         # excluding self.pos
         return hash((
             self.letter, self.color, self.backcolor,
-            self.font_family, self.font_size, self.clear
+            self.font_family, self.font_size, self.clear,
+            self.align
         ))
 
     def variant(self, variant_class = None, **kwargs):
