@@ -32,7 +32,16 @@ You may add your `*.ttf` font into the project directory and specify its name in
 ### UniVGA16 font 
 Template project and examples contain `UniVGA16.ttf` font file. The file originally can be accessed [here](https://github.com/mirror/reactos/blob/c6d2b35ffc91e09f50dfb214ea58237509329d6b/reactos/media/fonts/UniVGA16.ttf) under attached [license](https://github.com/mirror/reactos/tree/master/reactos/media/fonts/doc/UniVGA). Originally created by [Dmitry Bolkhovityanov](https://www.inp.nsk.su/~bolkhov/files/fonts/univga/). The font is also a part of [reactOS](https://reactos.org/). 
 
-
+## Guide
+### Shortcuts
+- `CTRL + Q` - quit
+- `CTRL + S` - screenshot, saves into out/*.png files
+### Follow examples
+Not all examples aren't basic or concise. Some of them act as a documentation :)
+- [colors](examples/color/callback.py) - Use text with colors to draw a static picture.
+- [block_size](examples/block_size/callback.py) - Why do you need to and how to set block_size.
+- [animation](examples/animation/callback.py) - Simple animated dot.Letter changing, moving.
+- [stress](examples/stress/callback.py) - Primitive system level benchmark.
 ___
 
 ## General notes
