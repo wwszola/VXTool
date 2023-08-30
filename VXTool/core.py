@@ -80,6 +80,13 @@ class Buffer():
             local.clear()
         local.append(dot)
 
+    def get_at(self, pos: tuple[int, int], idx: int = -1):
+        try:
+            local = self._container[pos]
+            return local[idx]
+        except (KeyError, ValueError):
+            return None
+
     def extend(self, dots: Iterator[Dot]):
         for dot in dots:
             self.put(dot)
