@@ -1,7 +1,8 @@
 from typing import Iterator, Generator, Callable, Iterable
 from math import sqrt, pi, sin, cos
+import random
 
-from .core import Rect, Dot
+from .core import Color, Rect, Dot, AnimatedDot
 
 def animation(dot: Dot, **changes: dict[str, Iterable]):
     sorted = {}
@@ -153,3 +154,19 @@ def polygon_seq(n: int, center: tuple[int, int], radius: int, offset: float = 0.
             yield from line_seq(prev, pos, 0)
             prev = pos
         yield from line_seq(pos, first)
+
+def random_walk_x(dot: AnimatedDot, delta_time: int = 0, length: int = 1):
+    for i in range(length):
+        x = random.choice([-1,-1,0,1,1])
+        dot.op_move(delta_time + i, (x, 0))
+    return dot
+
+def fade_in_fade_out(dot: AnimatedDot, delta_time: int = 0, length: int = 1, colors: list[Color] = []):
+    dot.op_set(delta_time, 'color', colors)
+    dot.op_set(delta_time + length - len(colors), 'color', colors[::-1])
+    return dot
+
+def spell_and_stop(dot: AnimatedDot, delta_time: int = 0, text: str = ''):
+    dot.op_set(delta_time, 'letter', text)
+    dot.op_stop(delta_time + len(text))
+    return dot
