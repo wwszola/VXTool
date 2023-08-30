@@ -68,9 +68,15 @@ ___
 - how to spawn the falling star
 
 ## TODO:
-- allow for positioning widgets
+### Immediate:
+- variant, copy, as type - how to deal properly with animated dots
+- applying animations (maybe copying instructions) instead of inheritance
+- clear animation
+- handle mouse events, mouse pos state
+- is emmiter a behaviour for a dot or is it it's own thing?
+### For later:
+- get rid of widgets, just single text render (?)
 - implement properly, document and test sync variants
-- handle mouse events (screen_to_grid)
 - backcolor transparency isn't transparent
 - Loading png tilesets
 - Position as (pygame.math.Vector2)
