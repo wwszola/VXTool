@@ -206,7 +206,9 @@ class AnimatedDot(Dot):
 
     def advance(self):
         result = True
-        while result and self.instructions:
+        while result:
+            if self.instruction_pointer >= len(self.instructions):
+                break
             op = self.instructions[self.instruction_pointer]
             if self.frame_counter < op.counter: # does nothing when no instructions for now
                 break
