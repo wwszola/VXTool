@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Iterator, Generator, NamedTuple, Iterable
-from copy import copy
+from copy import copy, deepcopy
 from enum import Enum, auto
 
 from pygame import Color as PyGameColor
@@ -166,6 +166,29 @@ class AnimatedDot(Dot):
         self.frame_counter = 0
         self.instruction_pointer = 0
         self.new_pos: tuple[int, int] = None
+
+    def variant(self, variant_class = None, option: str = "ref", **kwargs):
+        if variant_class is None:
+            variant_class = AnimatedDot
+        new_dot = super().variant(variant_class, **kwargs)
+        if issubclass(variant_class, AnimatedDot):
+            match option:
+                case "clear":
+                    new_dot.clear_state()
+                case "ref":
+                    new_dot.instructions = self.instructions
+                case "shallow":
+                    new_dot.instructions = copy(self.instructions)
+                case "deep":
+                    new_dot.instructions = deepcopy(self.instructions)
+        return new_dot
+
+    def clear_state(self):
+        self.instructions = []
+        self.frame_counter = 0
+        self.instruction_pointer = 0
+        self.new_pos = None
+        return self
 
     def _add_op(self, new_op: AnimationOp):
         idx = 0
