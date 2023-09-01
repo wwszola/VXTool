@@ -58,7 +58,7 @@ class Dot:
         new_dot = variant_class()
         for name, value in self.__dict__.items():
             if not hasattr(new_dot, name):
-                break
+                continue
             if name in kwargs:
                 setattr(new_dot, name, kwargs[name])
             else:
