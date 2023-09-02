@@ -75,6 +75,8 @@ class Buffer():
         return all(len(local) == 0 for local in self._container.values())
 
     def put(self, dot: Dot):
+        if not isinstance(dot, Dot):
+            return
         local: list[Dot] = self._container.setdefault(dot.pos, [])
         if dot.clear or dot.backcolor is not None:
             local.clear()
@@ -92,6 +94,8 @@ class Buffer():
             self.put(dot)
 
     def erase(self, dot: Dot):
+        if not isinstance(dot, Dot):
+            return
         try:
             local = self._container[dot.pos]
             local.remove(dot)
@@ -257,7 +261,7 @@ class AnimatedBuffer(Buffer):
 
     def put(self, dot: Dot):
         super().put(dot)
-        if isinstance(dot, AnimatedDot):
+        if callable(getattr(dot, "advance", None)):
             self.animated_dots.append(dot)
 
     def advance(self):
