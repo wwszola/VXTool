@@ -8,7 +8,8 @@ from pygame.time import Clock
 from pygame.image import save
 from pygame.event import Event, event_name
 
-from pygame import QUIT, KEYDOWN, KEYUP, MOUSEBUTTONDOWN, MOUSEBUTTONUP
+from pygame import QUIT, KEYDOWN, KEYUP
+from pygame import MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION
 from pygame import KMOD_CTRL
 
 from .render import TextRender, RENDER_MSG
@@ -77,7 +78,16 @@ def _app(_SETTINGS: dict):
     widgets_info = {}
     for name, attrs in _SETTINGS['WIDGETS'].items():
         widget = TextRender(**attrs, _font_bank = fonts)
-        info = {'shape': widget.shape, 'render_q': widget._render_q}
+        inv_scale = (widget.shape[0]/widget.full_res[0],
+                 widget.shape[1]/widget.full_res[1])
+        inv_translation = ((render_size[0]-widget.full_res[0])//2,
+                     (render_size[1]-widget.full_res[1])//2)
+        info = {
+            'inv_scale': inv_scale,
+            'inv_translation': inv_translation,
+            'shape': widget.shape, 
+            'render_q': widget._render_q
+        }
         widgets[name] = widget
         widgets_info[name] = info
 
@@ -94,8 +104,9 @@ def _app(_SETTINGS: dict):
     while running:
         running = not pygame.event.peek(QUIT)
         
-        keydowns = pygame.event.get(KEYDOWN)
-        captured = filter(lambda event: bool(event.mod & KMOD_CTRL), keydowns)
+        key_events = pygame.event.get((KEYDOWN, KEYUP))
+        mouse_events = pygame.event.get((MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION))
+        captured = filter(lambda event: bool(event.mod & KMOD_CTRL), key_events)
         for event in captured:
             match (event.key):
                 case pygame.K_q:
@@ -107,7 +118,7 @@ def _app(_SETTINGS: dict):
 
         try:
             event_out_q.put(
-                [PickableEvent.cast_from(event) for event in keydowns], 
+                [PickableEvent.cast_from(event) for event in key_events + mouse_events], 
                 block = real_time, 
                 timeout = 1.0
             )

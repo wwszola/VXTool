@@ -4,6 +4,7 @@ import re
 from queue import Empty as QueueEmpty
 
 from pygame import KEYDOWN, KEYUP
+from pygame import MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION
 from pygame.key import name as key_name
 
 from VXTool.render import RENDER_MSG
@@ -74,15 +75,26 @@ class CallbackProcess(Process):
         for event in events:
             handler = None
             name = event.type_name.upper()
-            if event.type in (KEYUP, KEYDOWN):
+            attr = ''
+            if event.type in (KEYDOWN, KEYUP):
                 attr = key_name(event.attrs['key']).replace(' ', '_').upper()
                 event.attrs['key_name'] = attr
-                handler = self._event_handlers.get((name, attr), None)
-            if not handler:
-                handler = self._event_handlers.get((name, ''), None)
+            elif event.type in (MOUSEBUTTONDOWN, MOUSEBUTTONUP):
+                attr = str(event.attrs['button'])
+            elif event.type == MOUSEMOTION:
+                attr = ''
+            handler = self._event_handlers.get((name, attr), None)
             if handler:
                 handler(event.attrs)
-    
+
+    def screen_to_grid(self, widget_name: str, screen_pos: tuple[int, int]):
+        x, y = screen_pos
+        x -= self.widgets_info[widget_name]['inv_translation'][0]
+        x *= self.widgets_info[widget_name]['inv_scale'][0]
+        y -= self.widgets_info[widget_name]['inv_translation'][1]
+        y *= self.widgets_info[widget_name]['inv_scale'][1]
+        return x, y
+
     def _buffer_to_data(self, buffer: Buffer):
         data = []
         new_dots = []
