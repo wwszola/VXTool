@@ -143,8 +143,8 @@ def _app(_SETTINGS: dict):
         # print(f"WDIGET FRAMES NO. {widget.frames_rendered_count}")
         # print(f"APP FRAMES: {frame}")
         # print("SCREEN BLITS:", blits)
-        # screen.fill(_SETTINGS['APP']['backcolor'])
         if blits:
+            screen.fill(_SETTINGS['APP']['backcolor'])
             screen.blits(blits)
             pygame.display.update()
 
