@@ -154,6 +154,7 @@ class ANIMATION_OP(Enum):
     STOP = auto()
     JMP = auto()
     MOVE = auto()
+    MOVE_TO = auto()
 
 class AnimationOp(NamedTuple):
     counter: int
@@ -226,6 +227,10 @@ class AnimatedDot(Dot):
         for i in range(repeat):
             self._add_op(AnimationOp(op_time + i, ANIMATION_OP.MOVE, (move_vector,)))
 
+    def op_move_to(self, delta_time: int, new_pos: tuple[int, int]):
+        op_time = self.frame_counter + delta_time
+        self._add_op(AnimationOp(op_time, ANIMATION_OP.MOVE_TO, (new_pos,)))
+
     def _find_instruction_pointer(self, frame_counter):
         for i, op in enumerate(self.instructions):
             if op.counter <= frame_counter:
@@ -249,6 +254,8 @@ class AnimatedDot(Dot):
                     self.instruction_pointer = self._find_instruction_pointer(op.args[0]) - 1
                 case ANIMATION_OP.MOVE:
                     self.new_pos = self.pos[0] + op.args[0][0], self.pos[1] + op.args[0][1]
+                case ANIMATION_OP.MOVE_TO:
+                    self.new_pos = op.args[0]
             self.instruction_pointer += 1
         self.frame_counter += 1
         return result
