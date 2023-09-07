@@ -70,6 +70,9 @@ def _app(_SETTINGS: dict):
     pygame.font.init()
     fonts, fonts_info = _font_preload(project_dir, _SETTINGS['APP']['preload_fonts'])
 
+    # hiding the cursor
+    pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
+
     record = _SETTINGS['APP'].get('record', None)
     quit = _SETTINGS['APP'].get('quit', None)
     real_time = _SETTINGS['APP'].get('real_time', False)
