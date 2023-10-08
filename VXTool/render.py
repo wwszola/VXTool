@@ -15,6 +15,7 @@ class RENDER_MSG(Flag):
     CONTINUE = auto() # Process next entry immediately after this one
     SET_BLOCK_SIZE = auto() # Resizes surface to match new dot size
     REGISTER_DOTS = auto() # Register dots in _hash_to_dot dictionary
+    STOP = auto()
     DEFAULT = auto()
     PROCEDURE = NO_CHANGE | CONTINUE
 

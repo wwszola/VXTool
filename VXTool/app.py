@@ -138,6 +138,8 @@ def _app(_SETTINGS: dict):
                     if surface is not None:
                         rect = surface.get_rect(center = screen.get_rect().center)
                         blits.append((surface, rect))
+                    if flags & RENDER_MSG.STOP:
+                        running = False
             except QueueEmpty:
                 pass
         # print(f"WDIGET FRAMES NO. {widget.frames_rendered_count}")
