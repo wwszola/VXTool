@@ -33,9 +33,9 @@ class CallbackProcess(Process):
         print(f"\nCallback setup: {self.widgets_info} {self.fonts_info} {self.user_settings} {self._event_handlers.keys()} ")
 
         self.running = False
-        self.setup()
 
     def run(self):
+        self.setup()
         self.running = True
         while self.running:
             try:
