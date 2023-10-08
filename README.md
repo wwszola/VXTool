@@ -67,12 +67,33 @@ ___
 - reminder: this doesn't need to be turing complete
 - how to spawn the falling star
 
+### System
+#### Entities
+- Main process
+- - App
+- - TextRender
+- Callback (process)
+#### Startup
+|App|TextRender|Callback|
+|:-:|:-:|:-:|
+|Create window, font preload|||
+|Create TextRender object|||
+||Create render queue||
+|Create event queue|||
+|Spawn and start Callback|||
+|Gives Callback access to TextRender's render queue||Has access to render queue|
+|||Start Callback Loop|
+#### Main Loop
+|App|TextRender|
+|:-:|:-:|
+|Capture events from pygame||
+|Execute any shortcuts pressed||
+|Put events on event queue||
+||Get entry from render queue|
+||Process entry|
+
 ## TODO:
 ### Immediate:
-- variant, copy, as type - how to deal properly with animated dots
-- applying animations (maybe copying instructions) instead of inheritance
-- clear animation
-- handle mouse events, mouse pos state
 - is emmiter a behaviour for a dot or is it it's own thing?
 ### For later:
 - get rid of widgets, just single text render (?)
