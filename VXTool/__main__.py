@@ -1,4 +1,4 @@
-from json import load
+import json
 from pathlib import Path
 from sys import argv, path
 from collections import OrderedDict
@@ -36,7 +36,7 @@ def _main():
     settings_path = project_dir / 'settings.json'
     try:
         with open(settings_path, 'r') as file:
-            data = load(file, object_pairs_hook = OrderedDict)
+            data = json.load(file, object_pairs_hook = OrderedDict)
             data['USER'].update(_SETTINGS['USER'])
             _SETTINGS.update(data)
     except FileNotFoundError as e:
