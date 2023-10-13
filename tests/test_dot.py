@@ -1,6 +1,6 @@
 import unittest
 
-from .util import Timer
+from util import Timer
 
 from VXTool.core import Dot, Color
 

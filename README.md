@@ -18,6 +18,12 @@ py -m build
 ```
 ### Install the wheel
 Building the package with `build` tool creates a `dist` directory containing files `VXTool-0.1.tar.gz`, `VXTool-0.1-py3-none-any.whl`. Install using pip specyfing `.whl` file. 
+
+
+### Running tests
+```
+py -m unittest discover -s tests
+```
 ___
 
 ## Template
