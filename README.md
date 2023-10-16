@@ -99,14 +99,17 @@ ___
 ||Process entry|
 
 ## TODO:
-### Immediate:
-- is emmiter a behaviour for a dot or is it it's own thing?
-### For later:
-- get rid of widgets, just single text render (?)
+- get rid of widgets, just single text render (yes just do it)
 - implement properly, document and test sync variants
 - backcolor transparency isn't transparent
+- sending multiple times from callback in the same frame implies continue flag, no need for that
+- a difference between clear and backcolor
+- default settings values
+- should render queue be divided into commands and data?
+- is blitting from a tileset faster than multiple surfaces?
 - Loading png tilesets
 - Position as (pygame.math.Vector2)
+- cleaning up util ( constistency, remember about pygame Vector and Rect)
 ### Sync
 - (__didnt try not waiting__) Callback chooses to wait or not for new InputFrame.
 - widget discards callback frames up to the last one if their counters don't match 
