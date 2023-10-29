@@ -78,7 +78,7 @@ class Buffer():
         if not isinstance(dot, Dot):
             return
         local: list[Dot] = self._container.setdefault(dot.pos, [])
-        if dot.clear or dot.backcolor is not None:
+        if dot.clear:
             local.clear()
         local.append(dot)
 
