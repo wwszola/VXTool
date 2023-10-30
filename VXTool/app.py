@@ -7,18 +7,22 @@ from pygame.font import Font
 from pygame.time import Clock
 from pygame.image import save
 from pygame.event import Event, event_name
+from pygame import Rect
 
 from pygame import QUIT, KEYDOWN, KEYUP
 from pygame import MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION
 from pygame import KMOD_CTRL
 
 from .render import TextRender, RENDER_MSG
+from .core import Color
 
 class PickableEvent:
     def __init__(self, type: int, attrs: dict = {}):
         self.type = type
         self.attrs = attrs
         self.attrs['type_name'] = event_name(self.type)
+        if "window" in self.attrs:
+            del self.attrs["window"]
 
     def __str__(self) -> str:
         return str(self.attrs)
@@ -65,7 +69,11 @@ def _app(_SETTINGS: dict):
 
     pygame.init()
     render_size = _SETTINGS['APP']['render_size']
-    screen = pygame.display.set_mode(render_size)
+    
+    screen = pygame.display.set_mode(render_size, vsync=0, flags=pygame.SCALED)
+    window = pygame._sdl2.Window.from_display_module()
+    renderer = pygame._sdl2.Renderer.from_window(window)
+    backcolor = Color(_SETTINGS["APP"]["backcolor"])
 
     pygame.font.init()
     fonts, fonts_info = _font_preload(project_dir, _SETTINGS['APP']['preload_fonts'])
@@ -80,7 +88,7 @@ def _app(_SETTINGS: dict):
     widgets = {}
     widgets_info = {}
     for name, attrs in _SETTINGS['WIDGETS'].items():
-        widget = TextRender(**attrs, _font_bank = fonts)
+        widget = TextRender(**attrs, _font_bank = fonts, renderer = renderer)
         inv_scale = (widget.shape[0]/widget.full_res[0],
                  widget.shape[1]/widget.full_res[1])
         inv_translation = ((render_size[0]-widget.full_res[0])//2,
@@ -134,21 +142,19 @@ def _app(_SETTINGS: dict):
             flags = RENDER_MSG.CONTINUE
             try:
                 while flags & RENDER_MSG.CONTINUE:
-                    surface, flags = widget._render_next(block=block)
-                    if surface is not None:
-                        rect = surface.get_rect(center = screen.get_rect().center)
-                        blits.append((surface, rect))
+                    flags = widget._render_next(block=block)
+                    rect = Rect((0, 0), widget.full_res)
+                    rect.center = (render_size[0]//2, render_size[1]//2)
+                    renderer.target = None
+                    renderer.draw_color = backcolor
+                    renderer.clear()
+                    renderer.blit(widget.screen, rect)
                     if flags & RENDER_MSG.STOP:
                         running = False
             except QueueEmpty:
                 pass
-        # print(f"WDIGET FRAMES NO. {widget.frames_rendered_count}")
-        # print(f"APP FRAMES: {frame}")
-        # print("SCREEN BLITS:", blits)
-        if blits:
-            screen.fill(_SETTINGS['APP']['backcolor'])
-            screen.blits(blits)
-            pygame.display.update()
+        
+        renderer.present()
 
         should_record = record and record[0] <= frame < record[1] 
         should_record = should_record and (real_time or (not real_time and blits))

@@ -7,6 +7,8 @@ from pygame.font import Font
 from pygame import transform
 from pygame import SRCALPHA
 
+from pygame._sdl2 import Renderer, Texture
+
 from .core import Color, BLACK, Dot, Buffer
 
 class RENDER_MSG(Flag):
@@ -31,7 +33,8 @@ class TextRender:
     
     cached_renders: dict[int|str, Surface] = field(default_factory = dict, kw_only = True)
     _hash_to_dot: dict[int, Dot] = field(default_factory=dict, kw_only=True)
-    _screen: Surface = field(init = False, default = None)
+    screen: Texture = field(init = False, default = None)
+    renderer: Renderer = field(kw_only = True)
 
     _render_q: Queue = field(init = False)
     frames_rendered_count: int = field(init = False, default = 0)
@@ -39,6 +42,7 @@ class TextRender:
     def __post_init__(self):
         if self.block_size:
             self.resize_screen()
+        self.backcolor = Color(self.backcolor)
         self._render_q = Queue()
 
     @property
@@ -50,10 +54,7 @@ class TextRender:
 
     def resize_screen(self):
         print(f'Block size: {self.block_size} Full size: {self.full_size}')
-        self.screen = Surface(self.full_size, SRCALPHA)
-        self.screen.fill(self.backcolor)
-        empty_block = Surface(self.block_size, SRCALPHA)
-        empty_block.fill(self.backcolor)
+        self.screen = Texture(self.renderer, self.full_size, 32, target=True)
         self.cached_renders.clear()
 
     def block_rect(self, pos: tuple[int, int]) -> Rect:
@@ -86,7 +87,6 @@ class TextRender:
         font = self.get_font(dot.font_family, dot.font_size)
 
         dot_render = font.render(dot.letter, False, dot.color)
-        dot_render = dot_render.convert_alpha(block_render)
         dot_render.set_alpha(dot.color.a)
         
         align = dot.align.strip().lower()
@@ -98,8 +98,7 @@ class TextRender:
                 rect = dot_render.get_rect(center = block_rect.center)
 
         block_render.blit(dot_render, rect)
-        block_render = block_render.convert_alpha()
-        return block_render
+        return Texture.from_surface(self.renderer, block_render)
 
     def _render_next(self, block = True, timeout: float = None):
         entry = self._render_q.get(block, timeout)
@@ -139,12 +138,15 @@ class TextRender:
                 except StopIteration:
                     break        
 
+            self.renderer.target = self.screen
             if not flags & RENDER_MSG.NO_CLEAR:
-                self.screen.fill(self.backcolor)
-            self.screen.blits(blits)
+                self.renderer.draw_color = self.backcolor
+                self.renderer.clear()
+            for render, rect in blits:
+                self.renderer.blit(render, rect)
 
         if flags & RENDER_MSG.NO_CHANGE or flags & RENDER_MSG.CONTINUE:
-            return None, flags
+            return flags
 
         self.frames_rendered_count += 1
-        return transform.scale(self.screen, self.full_res), flags
+        return flags
