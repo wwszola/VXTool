@@ -6,6 +6,7 @@ from enum import Enum, auto
 
 from .app import _app
 from .core import Color
+from .project import load_project
 
 class LAUNCH_MSG(Enum):
     NO_SETTINGS_FILE = auto()
@@ -17,50 +18,11 @@ class LAUNCH_MSG(Enum):
 def _main():
     # first argument is read as a directory to specified project
     project_dir: Path = Path(argv[1]) 
-    out_dir = project_dir / 'out'
-    print(project_dir)
 
-    # don't overwrite any of the defaults below
-    # in your project's settings.json file 
-    _SETTINGS = OrderedDict([
-        ("USER", OrderedDict([
-            ("fonts", {}),
-            ("project_dir", project_dir),
-            ("out_dir", out_dir)
-        ]))
-    ])
-    msgs = []
+    callback, config, fonts_info = load_project(project_dir)
+    print(config)
 
-    # tries to load settings and callback files first,
-    # before checking for a command
-    settings_path = project_dir / 'settings.json'
-    try:
-        with open(settings_path, 'r') as file:
-            data = json.load(file, object_pairs_hook = OrderedDict)
-            data['USER'].update(_SETTINGS['USER'])
-            _SETTINGS.update(data)
-    except FileNotFoundError as e:
-        msgs.extend((LAUNCH_MSG.NO_SETTINGS_FILE, project_dir))
-
-    # to properly load colors in settings file use "COLORS" attribute
-    # ex. "USER": {"COLORS": {"WHITE": [0, 0, 0]}}
-    if "COLORS" in _SETTINGS["USER"]:
-        colors = OrderedDict()
-        for color_name, rgba in _SETTINGS["USER"]["COLORS"].items():
-            colors[color_name] = Color(*rgba)
-        _SETTINGS["USER"]["COLORS"] = colors
-
-    # your's callback.py file should include a class named Callback
-    # inheriting from VXTool.callback.CallbackProcess
-    try:
-        path.append(project_dir.as_posix())
-        from callback import Callback
-        assert Callback
-        _SETTINGS['APP']['_callback'] = Callback
-    except (ImportError, AssertionError) as e:
-        msgs.extend((LAUNCH_MSG.NO_CALLBACK_FILE, project_dir))
-
-    _SETTINGS['TASKS']: dict = {
+    TASKS: dict = {
         'movie': _movie_task_call, # stitch rendered .png files into .mp4 movie
         'create': _new_project_task_call # creates new project from VXTool_template
     }
@@ -70,26 +32,21 @@ def _main():
     # execution of "end_tasks" specified in "APP" settings are ignored
 
     # second argument is name of the command/task you want to use
-    if len(argv) > 2 and argv[2] in _SETTINGS['TASKS'].keys():
-        call = _SETTINGS['TASKS'].get(argv[2], None)
+    if len(argv) > 2 and argv[2] in TASKS.keys():
+        call = TASKS.get(argv[2], None)
         if call: 
-            call(_SETTINGS, msgs)
+            call(config, msgs)
         else:
             msgs.extend((LAUNCH_MSG.TASK_FAIL, f'unknown command {argv[2]}'))
         return msgs
 
-    # app is able to launch when settings and callback files are loaded
-    if LAUNCH_MSG.NO_CALLBACK_FILE in msgs or LAUNCH_MSG.NO_SETTINGS_FILE in msgs:
-        msgs.append(LAUNCH_MSG.CALLBACK_FAIL)
-        return msgs
-
-    _app(_SETTINGS)
+    _app(callback, config, fonts_info)
 
     # "end_tasks" may be specified which are commands to be executed
     # after successful _app launch 
-    for task in _SETTINGS['APP']['end_tasks']:
-        call = _SETTINGS['TASKS'][task]
-        if call: call(_SETTINGS, msgs)
+    for task in config['APP']['end_tasks']:
+        call = TASKS[task]
+        if call: call(config, msgs)
 
     return msgs
 

@@ -5,7 +5,6 @@ from enum import Enum, auto
 
 from pygame import Color as PyGameColor
 from pygame import Rect
-from pygame.font import Font
 
 class Color(PyGameColor):
     def __hash__(self):
@@ -22,15 +21,14 @@ BLACK = Color(0, 0, 0, 255)
 class Dot:
     def __init__(self, pos: tuple[int, int] = None, letter: str = None,
             color: Color = None, backcolor: Color = None, 
-            font_family: str | None = None, font_size: int = None,
+            font_name: str | None = None,
             clear: bool = True, align: str = 'center'
             ):
         self.pos: tuple[int, int] = pos
         self.letter: str = letter
         self.color: Color = color
         self.backcolor: Color = backcolor
-        self.font_family: str = font_family
-        self.font_size: str = font_size
+        self.font_name: str = font_name
         self.clear: str = clear
         self.align: str = align
 
@@ -48,7 +46,7 @@ class Dot:
         # excluding self.pos
         return hash((
             self.letter, self.color, self.backcolor,
-            self.font_family, self.font_size, self.clear,
+            self.font_name, self.clear,
             self.align
         ))
 

@@ -10,6 +10,7 @@ from pygame import SRCALPHA
 from pygame._sdl2 import Renderer, Texture
 
 from .core import Color, BLACK, Dot, Buffer
+from .font import FontBank
 
 class RENDER_MSG(Flag):
     NO_CLEAR = auto() # Doesn't clear the screen before drawing content of the entry
@@ -25,11 +26,10 @@ class RENDER_MSG(Flag):
 class TextRender:
     shape: tuple[int, int]
     full_res: tuple[int, int]
+    _font_bank: FontBank
     block_size: tuple[int, int] = None
 
     backcolor: Color = BLACK
-
-    _font_bank: dict[Font] = field(default_factory = dict)
     
     cached_renders: dict[int|str, Surface] = field(default_factory = dict, kw_only = True)
     _hash_to_dot: dict[int, Dot] = field(default_factory=dict, kw_only=True)
@@ -67,11 +67,8 @@ class TextRender:
     def grid_rect(self) -> Rect:
         return Rect((0, 0), self.shape)
 
-    def get_font(self, name: str, size: int) -> Font:
-        return self._font_bank[name, size]
-    
     def get_dot_size(self, dot: Dot):
-        return self.get_font(dot.font_family, dot.font_size).size(dot.letter)
+        return self._font_bank.get(dot.font_name).size(dot.letter)
 
     def _gen_dot_render(self, dot: Dot) -> Surface:
         block_render = Surface(self.block_size, SRCALPHA)
@@ -84,7 +81,7 @@ class TextRender:
             backcolor = self.backcolor
         block_render.fill(backcolor)
 
-        font = self.get_font(dot.font_family, dot.font_size)
+        font = self._font_bank.get(dot.font_name)
 
         dot_render = font.render(dot.letter, False, dot.color)
         dot_render.set_alpha(dot.color.a)

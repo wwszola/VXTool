@@ -17,11 +17,10 @@ class CallbackProcess(Process):
         pattern = r"^on_(?P<name>[a-z0-9]+)(?:_{1}(?P<attr>\w+))*$",
         flags = re.IGNORECASE
     )
-    def __init__(self, widgets_info: dict, fonts_info: dict, user_settings: dict, event_frame_q: Queue):
+    def __init__(self, info: dict, config: dict, event_frame_q: Queue):
         super().__init__()
-        self.widgets_info: dict = widgets_info
-        self.fonts_info: dict = fonts_info
-        self.user_settings: dict = user_settings
+        self.info: dict = info
+        self.config: dict = config
         self.event_frame_q: Queue[list[PickableEvent]] = event_frame_q
         self.updates_count: int = 0
 
@@ -30,7 +29,7 @@ class CallbackProcess(Process):
 
         self._hash_to_dot: dict[int, Dot] = dict()
 
-        print(f"\nCallback setup: {self.widgets_info} {self.fonts_info} {self.user_settings} {self._event_handlers.keys()} ")
+        print(f"\nCallback setup: {self.info} {self.config} {self._event_handlers.keys()} ")
 
         self.running = False
 
@@ -51,9 +50,7 @@ class CallbackProcess(Process):
         # except QueueEmpty:
         #     pass
         
-        for info in self.widgets_info.values():
-            # info['render_q'].close()
-            info['render_q'].cancel_join_thread()
+        self.info['render_q'].cancel_join_thread()
 
     def _prepare_event_handlers(self):
         for key in dir(self):
@@ -87,12 +84,12 @@ class CallbackProcess(Process):
             if handler:
                 handler(event.attrs)
 
-    def screen_to_grid(self, widget_name: str, screen_pos: tuple[int, int]):
+    def screen_to_grid(self, screen_pos: tuple[int, int]):
         x, y = screen_pos
-        x -= self.widgets_info[widget_name]['inv_translation'][0]
-        x *= self.widgets_info[widget_name]['inv_scale'][0]
-        y -= self.widgets_info[widget_name]['inv_translation'][1]
-        y *= self.widgets_info[widget_name]['inv_scale'][1]
+        x -= self.info['inv_translation'][0]
+        x *= self.info['inv_scale'][0]
+        y -= self.info['inv_translation'][1]
+        y *= self.info['inv_scale'][1]
         return x, y
 
     def _buffer_to_data(self, buffer: Buffer):
@@ -110,23 +107,22 @@ class CallbackProcess(Process):
                 data.append(_hash)
         return data, new_dots
 
-    def send(self, widget_name: str, buffer: Buffer, flags: RENDER_MSG = RENDER_MSG.DEFAULT, *args):
-        if widget_name in self.widgets_info:
-            entry = [flags, *args]
-            if not flags & RENDER_MSG.NO_CHANGE:
-                if not buffer:
-                    raise ValueError('add RENDER_MSG.NO_CHANGE flag to send without the buffer.')                   
-                if flags & RENDER_MSG.REGISTER_DOTS:
-                    raise ValueError('add RENDER_MSG.NO_CHANGE to register dots with RENDER_MSG.REGISTER_DOTS')
+    def send(self, buffer: Buffer, flags: RENDER_MSG = RENDER_MSG.DEFAULT, *args):
+        entry = [flags, *args]
+        if not flags & RENDER_MSG.NO_CHANGE:
+            if not buffer:
+                raise ValueError('add RENDER_MSG.NO_CHANGE flag to send without the buffer.')                   
+            if flags & RENDER_MSG.REGISTER_DOTS:
+                raise ValueError('add RENDER_MSG.NO_CHANGE to register dots with RENDER_MSG.REGISTER_DOTS')
 
-                data, new_dots = self._buffer_to_data(buffer)
-                if new_dots:
-                    entry[0] = entry[0] | RENDER_MSG.REGISTER_DOTS
-                    entry.append(new_dots)
-                entry.append(data)
+            data, new_dots = self._buffer_to_data(buffer)
+            if new_dots:
+                entry[0] = entry[0] | RENDER_MSG.REGISTER_DOTS
+                entry.append(new_dots)
+            entry.append(data)
 
-            # print(f'CALLBACK ENTRY: {entry}')
-            self.widgets_info[widget_name]['render_q'].put(tuple(entry), block=False)
+        # print(f'CALLBACK ENTRY: {entry}')
+        self.info['render_q'].put(tuple(entry), block=False)
 
     def setup(self):
         pass

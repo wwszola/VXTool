@@ -15,6 +15,8 @@ from pygame import KMOD_CTRL
 
 from .render import TextRender, RENDER_MSG
 from .core import Color
+from .project import get_out_dir
+from .font import FontBank
 
 class PickableEvent:
     def __init__(self, type: int, attrs: dict = {}):
@@ -62,55 +64,59 @@ def _font_preload(project_dir, font_info):
             print(e)
     return fonts, fonts_info
 
-def _app(_SETTINGS: dict):
-    print(f"APP settings: {_SETTINGS['APP']}")
-    project_dir = _SETTINGS['USER']['project_dir']
-    out_dir = _SETTINGS['USER']['out_dir']
+def _app(callback, config, fonts_info):
+    project_dir = config['project_dir']
+    out_dir = get_out_dir(config)
 
     pygame.init()
-    render_size = _SETTINGS['APP']['render_size']
+    render_size = config['render_size']
     
     screen = pygame.display.set_mode(render_size, vsync=0, flags=pygame.SCALED)
     window = pygame._sdl2.Window.from_display_module()
     renderer = pygame._sdl2.Renderer.from_window(window)
-    backcolor = Color(_SETTINGS["APP"]["backcolor"])
+    backcolor = Color(config["backcolor"])
 
-    pygame.font.init()
-    fonts, fonts_info = _font_preload(project_dir, _SETTINGS['APP']['preload_fonts'])
+    font_bank = FontBank()
+    font_bank.load_all(fonts_info)
 
     # hiding the cursor
     pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
 
-    record = _SETTINGS['APP'].get('record', None)
-    quit = _SETTINGS['APP'].get('quit', None)
-    real_time = _SETTINGS['APP'].get('real_time', False)
+    record = config["record"]
+    quit = config["quit"]
+    real_time = config["real_time"]
 
-    widgets = {}
-    widgets_info = {}
-    for name, attrs in _SETTINGS['WIDGETS'].items():
-        widget = TextRender(**attrs, _font_bank = fonts, renderer = renderer)
-        inv_scale = (widget.shape[0]/widget.full_res[0],
-                 widget.shape[1]/widget.full_res[1])
-        inv_translation = ((render_size[0]-widget.full_res[0])//2,
-                     (render_size[1]-widget.full_res[1])//2)
-        info = {
-            'inv_scale': inv_scale,
-            'inv_translation': inv_translation,
-            'shape': widget.shape, 
-            'render_q': widget._render_q
-        }
-        widgets[name] = widget
-        widgets_info[name] = info
+    widget = TextRender(
+        shape = config["shape"],
+        full_res = config["full_res"],
+        backcolor = config["backcolor"],
+        _font_bank = font_bank,
+        renderer = renderer
+    )
+    widget_rect = Rect((0, 0), widget.full_res)
+    widget_rect.center = (render_size[0]//2, render_size[1]//2)
+                
+    inv_scale = (widget.shape[0]/widget.full_res[0],
+                widget.shape[1]/widget.full_res[1])
+    inv_translation = ((render_size[0]-widget.full_res[0])//2,
+                    (render_size[1]-widget.full_res[1])//2)
+    info = {
+        'inv_scale': inv_scale,
+        'inv_translation': inv_translation,
+        'render_q': widget._render_q
+    }
 
     event_out_q = Queue()
-    callback = _SETTINGS['APP']['_callback'](
-        widgets_info, fonts_info, _SETTINGS['USER'], event_out_q
+    callback_cls = callback.Callback
+    callback_process = callback_cls(
+        info, config, event_out_q
     )
-    callback.start()
+    callback_process.start()
 
+    FPS = config["FPS"]
     running = True
     clock = Clock()
-    clock.tick(_SETTINGS['APP']['FPS'])
+    clock.tick(FPS)
     frame = 0
     while running:
         running = not pygame.event.peek(QUIT)
@@ -136,28 +142,23 @@ def _app(_SETTINGS: dict):
         except QueueFull:
             pass
 
-        blits = []
-        for widget in widgets.values():
-            block = widget.frames_rendered_count == 0 or not real_time
-            flags = RENDER_MSG.CONTINUE
-            try:
-                while flags & RENDER_MSG.CONTINUE:
-                    flags = widget._render_next(block=block)
-                    rect = Rect((0, 0), widget.full_res)
-                    rect.center = (render_size[0]//2, render_size[1]//2)
-                    renderer.target = None
-                    renderer.draw_color = backcolor
-                    renderer.clear()
-                    renderer.blit(widget.screen, rect)
-                    if flags & RENDER_MSG.STOP:
-                        running = False
-            except QueueEmpty:
-                pass
+        block = widget.frames_rendered_count == 0 or not real_time
+        flags = RENDER_MSG.CONTINUE
+        try:
+            while flags & RENDER_MSG.CONTINUE:
+                flags = widget._render_next(block=block)
+                renderer.target = None
+                renderer.draw_color = backcolor
+                renderer.clear()
+                renderer.blit(widget.screen, widget_rect)
+                if flags & RENDER_MSG.STOP:
+                    running = False
+        except QueueEmpty:
+            pass
         
         renderer.present()
 
         should_record = record and record[0] <= frame < record[1] 
-        should_record = should_record and (real_time or (not real_time and blits))
         if should_record:
             save(screen, out_dir / f'frame_{frame:0>5}.png')
 
@@ -165,14 +166,14 @@ def _app(_SETTINGS: dict):
             running = False
         
         frame += 1
-        last_delta = clock.tick(_SETTINGS['APP']['FPS'])
+        last_delta = clock.tick(FPS)
         real_fps = 1000/last_delta
         pygame.display.set_caption(f'{real_fps:.2}')
 
 
-    callback.running = False
+    callback_process.running = False
     # event_out_q.close()
     event_out_q.cancel_join_thread()
-    callback.join()
+    callback_process.join()
     
     pygame.quit()
