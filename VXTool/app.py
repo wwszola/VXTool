@@ -47,23 +47,6 @@ class PickableEvent:
     def type_name(self):
         return self.attrs['type_name']
 
-def _font_preload(project_dir, font_info):
-    fonts = {}
-    fonts_info = {}
-    for name, data in font_info.items():
-        path = data[0]
-        sizes = data[1:]
-        try:
-            for size in sizes:
-                font = Font(project_dir / path, size)
-                fonts[name, size] = font
-                fonts_info[name, size] = {
-                    "size": font.size('█')
-                }
-        except FileNotFoundError as e:
-            print(e)
-    return fonts, fonts_info
-
 def _app(callback, config, fonts_info):
     project_dir = config['project_dir']
     out_dir = get_out_dir(config)
