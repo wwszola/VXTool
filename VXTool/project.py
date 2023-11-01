@@ -31,9 +31,12 @@ def load_project(project_dir: Path):
     path.append(str(project_dir))
     callback = importlib.import_module("callback")
     settings = importlib.import_module("settings")
+
     config = deepcopy(CONFIG_DEFAULTS)
     config["project_dir"] = project_dir
     config.update(settings.CONFIG)
+    config["out_dir"] = get_out_dir(config)
+
     fonts_info = settings.FONTS
     return callback, config, fonts_info
 
