@@ -1,11 +1,9 @@
 from queue import Empty as QueueEmpty
-from queue import Full as QueueFull
 from multiprocessing import Queue
+from pathlib import Path
 
 import pygame
-from pygame.font import Font
 from pygame.time import Clock
-from pygame.image import save
 from pygame.event import Event, event_name
 from pygame import Rect
 
@@ -13,9 +11,9 @@ from pygame import QUIT, KEYDOWN, KEYUP
 from pygame import MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION
 from pygame import KMOD_CTRL
 
-from .render import TextRender, RENDER_MSG
-from .core import Color
-from .project import get_out_dir
+from pygame._sdl2 import Window, Renderer, Texture
+
+from .render import DotRenderer, RENDER_MSG
 from .font import FontBank
 
 class PickableEvent:
@@ -47,116 +45,154 @@ class PickableEvent:
     def type_name(self):
         return self.attrs['type_name']
 
-def _app(callback, config, fonts_info):
-    project_dir = config['project_dir']
-    out_dir = get_out_dir(config)
-
-    pygame.init()
-    render_size = config['render_size']
-    
-    screen = pygame.display.set_mode(render_size, vsync=0, flags=pygame.SCALED)
-    window = pygame._sdl2.Window.from_display_module()
-    renderer = pygame._sdl2.Renderer.from_window(window)
-    backcolor = Color(config["backcolor"])
-
-    font_bank = FontBank()
-    font_bank.load_all(fonts_info)
-
-    # hiding the cursor
-    pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
-
-    record = config["record"]
-    quit = config["quit"]
-    real_time = config["real_time"]
-
-    widget = TextRender(
-        shape = config["shape"],
-        full_res = config["full_res"],
-        backcolor = config["backcolor"],
-        _font_bank = font_bank,
-        renderer = renderer
-    )
-    widget_rect = Rect((0, 0), widget.full_res)
-    widget_rect.center = (render_size[0]//2, render_size[1]//2)
-                
-    inv_scale = (widget.shape[0]/widget.full_res[0],
-                widget.shape[1]/widget.full_res[1])
-    inv_translation = ((render_size[0]-widget.full_res[0])//2,
-                    (render_size[1]-widget.full_res[1])//2)
-    info = {
-        'inv_scale': inv_scale,
-        'inv_translation': inv_translation,
-        'render_q': widget._render_q
-    }
-
-    event_out_q = Queue()
-    callback_cls = callback.Callback
-    callback_process = callback_cls(
-        info, config, event_out_q
-    )
-    callback_process.start()
-
-    FPS = config["FPS"]
-    running = True
-    clock = Clock()
-    clock.tick(FPS)
-    frame = 0
-    while running:
-        running = not pygame.event.peek(QUIT)
+class App:
+    def __init__(self):
+        if not pygame.get_init():
+            pygame.init()
         
-        key_events = pygame.event.get((KEYDOWN, KEYUP))
-        mouse_events = pygame.event.get((MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION))
-        captured = filter(lambda event: bool(event.mod & KMOD_CTRL), key_events)
-        for event in captured:
-            match (event.key):
-                case pygame.K_q:
-                    running = False
-                case pygame.K_s:
-                    save(screen, out_dir / f'frame_{frame:0>5}.png')
-                case pygame.K_r:
-                    record = (frame, 999999)
+        self.running = False
+        self.frame: int = -1
 
-        try:
-            event_out_q.put(
-                [PickableEvent.cast_from(event) for event in key_events + mouse_events], 
-                block = real_time, 
-                timeout = 1.0
-            )
-        except QueueFull:
-            pass
+    def __del__(self):
+        if pygame.get_init():
+            pygame.quit()
 
-        block = widget.frames_rendered_count == 0 or not real_time
+    def init_render_context(self, font_bank: FontBank):
+        self._window: Window = Window(resizable = False)
+        self._renderer: Renderer = Renderer(self._window, target_texture = True)
+        self._render_tex: Texture = None
+
+        self._render_q: Queue = Queue()
+        self._dot_renderer: DotRenderer = DotRenderer(font_bank, self._renderer)
+
+    def init_event_context(self):
+        self._events: list = list()
+        self._event_q: Queue = Queue()
+
+    def apply_config(self, config: dict):
+        render_size = config.get("render_size", None)
+        if render_size is None:
+            raise ValueError(f"Invalid 'render_size' key in config:\n{config}")
+        
+        self._window.size = render_size
+        self._render_tex = Texture(self._renderer, render_size, 32, target = True)
+        
+        self._config: dict = config
+
+    def _get_screenshot_filename(self, _frame: int | None = None):
+        if _frame is None:
+            _frame = self.frame
+        return self._config["out_dir"] / f"frame_{_frame:0>5}.png"
+    
+    def _screenshot(self, filename: str | Path):
+        filename = str(filename)
+        raise NotImplementedError("Saving a screen using sdl2 renderer")
+
+    def _block_rect(self, pos):
+        shape = self._config["shape"]
+        full_res = self._config["full_res"]
+        block_size = full_res[0] // shape[0], full_res[1] // shape[1]
+        return Rect((pos[0]*block_size[0], pos[1]*block_size[1]), block_size)
+    
+    def _process_render_entry(self, entry):
+        flags = entry[0]
+        args = list(entry[1:])
+
+        if not flags & RENDER_MSG.NO_CHANGE:
+            data = args.pop(0)
+            data_it = iter(data)
+            blits = []
+            while True:
+                try:
+                    pos = next(data_it)
+                    rect = self.block_rect(pos)
+                    length = next(data_it)
+                    for _ in range(length):
+                        _hash = next(data_it)
+                        render = self._dot_renderer.get_render(_hash)
+                        blits.append((render, rect))
+                except StopIteration:
+                    break        
+
+            if not flags & RENDER_MSG.NO_CLEAR:
+                self.renderer.draw_color = self.backcolor
+                self.renderer.clear()
+            for render, rect in blits:
+                self.renderer.blit(render, rect)
+        
+        return flags
+            
+    def _render_next_frame(self, block: bool = True, timeout: float | None = None):
+        self.renderer.target = self._render_tex
+        
+        real_time = self._config.get("real_time", False)
+        block = self.frame == 0 or not real_time
         flags = RENDER_MSG.CONTINUE
         try:
             while flags & RENDER_MSG.CONTINUE:
-                flags = widget._render_next(block=block)
-                renderer.target = None
-                renderer.draw_color = backcolor
-                renderer.clear()
-                renderer.blit(widget.screen, widget_rect)
+                entry = self._render_q.get(block, timeout)
+                flags = self._process_render_entry(entry)
                 if flags & RENDER_MSG.STOP:
-                    running = False
+                    self.running = False
         except QueueEmpty:
             pass
         
-        renderer.present()
+        self.frame += 1
 
-        should_record = record and record[0] <= frame < record[1] 
-        if should_record:
-            save(screen, out_dir / f'frame_{frame:0>5}.png')
+    def _process_events(self):
+        self.running = not pygame.event.peek(QUIT)
 
-        if quit and frame >= quit:
-            running = False
-        
-        frame += 1
-        last_delta = clock.tick(FPS)
-        real_fps = 1000/last_delta
-        pygame.display.set_caption(f'{real_fps:.2}')
+        key_events = pygame.event.get((KEYDOWN, KEYUP))
+        mouse_events = pygame.event.get((MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION))
+        self._events.clear()
+        self._events.extend(key_events + mouse_events)
 
+        captured = list(filter(lambda event: bool(event.mod & KMOD_CTRL), key_events))
+        self._process_shortcuts(captured)
 
-    callback_process.running = False
-    # event_out_q.close()
-    event_out_q.cancel_join_thread()
-    callback_process.join()
-    
-    pygame.quit()
+        self._event_q.put(
+            [PickableEvent.cast_from(event) for event in self._events], 
+            block = self._config["real_time"],
+            timeout = 1.0
+        )
+
+    def _process_shortcuts(self, captured: list):
+        for event in captured:
+            match (event.key):
+                case pygame.K_q:
+                    self.running = False
+                case pygame.K_s:
+                    self._screenshot(self._get_screenshot_filename(self.frame - 1))
+
+    def _main_loop(self):
+        self.running = True
+        self.frame = 0
+
+        FPS = self._config.get("FPS", None)
+        record = self._config.get("record", (0, 0))
+        quit = self._config.get("quit", -1)
+
+        clock = Clock()
+        clock.tick()
+        while self.running:
+            self._window.title = f"{clock.get_fps():.2}"
+
+            self._process_events()
+            self._dot_renderer.process_queue()
+            self._render_next_frame()
+            self._renderer.target = None
+            self._renderer.draw_color = self._config["backcolor"]
+            self._renderer.clear()
+            self.renderer.blit(self._render_tex, None)
+                    
+            self.renderer.present()
+
+            should_record = record[0] <= self.frame < record[1] 
+            if should_record:
+                self._screenshot(self._get_screenshot_filename())
+            
+            if quit >= self.frame:
+                self.running = False
+            
+            self.frame += 1
+            clock.tick(FPS)
