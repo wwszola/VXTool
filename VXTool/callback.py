@@ -17,19 +17,16 @@ class CallbackProcess(Process):
         pattern = r"^on_(?P<name>[a-z0-9]+)(?:_{1}(?P<attr>\w+))*$",
         flags = re.IGNORECASE
     )
-    def __init__(self, info: dict, config: dict, event_frame_q: Queue):
+    def __init__(self, render_q: Queue, event_q: Queue):
         super().__init__()
-        self.info: dict = info
-        self.config: dict = config
-        self.event_frame_q: Queue[list[PickableEvent]] = event_frame_q
+        self._render_q: Queue = render_q
+        self._event_q: Queue = event_q
         self.updates_count: int = 0
 
         self._event_handlers: dict[str, Callable] = dict()
         self._prepare_event_handlers()
 
         self._hash_to_dot: dict[int, Dot] = dict()
-
-        print(f"\nCallback setup: {self.info} {self.config} {self._event_handlers.keys()} ")
 
         self.running = False
 
@@ -44,13 +41,8 @@ class CallbackProcess(Process):
                 # print(f"CALLBACK FRAMES NO. {self.updates_count} {str(self.running)}")
             except QueueEmpty:
                 self.running = False
-
-        # try:
-        #     self.event_frame_q.get_nowait()
-        # except QueueEmpty:
-        #     pass
         
-        self.info['render_q'].cancel_join_thread()
+        self._render_q.cancel_join_thread()
 
     def _prepare_event_handlers(self):
         for key in dir(self):
@@ -65,9 +57,10 @@ class CallbackProcess(Process):
             attr = '' if attr is None else attr
             attr = attr.upper()
             self._event_handlers[(name, attr)] = value
+        print(self._event_handlers.keys())
 
     def _dispatch_events(self, block = True, timeout = None):
-        events = self.event_frame_q.get(block, timeout)
+        events: list[PickableEvent] = self._event_q.get(block, timeout)
         # print("DISPATCH EVENTS: ", [(event.type_name, event.attrs) for event in events])
         for event in events:
             handler = None
@@ -83,14 +76,6 @@ class CallbackProcess(Process):
             handler = self._event_handlers.get((name, attr), None)
             if handler:
                 handler(event.attrs)
-
-    def screen_to_grid(self, screen_pos: tuple[int, int]):
-        x, y = screen_pos
-        x -= self.info['inv_translation'][0]
-        x *= self.info['inv_scale'][0]
-        y -= self.info['inv_translation'][1]
-        y *= self.info['inv_scale'][1]
-        return x, y
 
     def _buffer_to_data(self, buffer: Buffer):
         data = []
@@ -122,7 +107,7 @@ class CallbackProcess(Process):
             entry.append(data)
 
         # print(f'CALLBACK ENTRY: {entry}')
-        self.info['render_q'].put(tuple(entry), block=False)
+        self._render_q.put(tuple(entry), block=False)
 
     def setup(self):
         pass
