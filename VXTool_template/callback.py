@@ -3,7 +3,7 @@ from VXTool.render import RENDER_MSG
 from VXTool.core import Color, Dot, Buffer
 # from VXTool.util import 
 
-from settings import colors
+from .settings import colors
 
 class Callback(CallbackProcess):
     def setup(self):

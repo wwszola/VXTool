@@ -20,17 +20,18 @@ CONFIG_DEFAULTS = {
 
 def get_out_dir(config: dict):
     out_dir = config["out_dir"]
-    if out_dir.is_absolute:
+    if out_dir.is_absolute():
         return out_dir
     else:
         return config["project_dir"] / config["out_dir"]
 
 def load_project(project_dir: Path):
-    if "callback" in modules or "settings" in modules:
-        raise Exception("Unload project before trying to load another")
-    path.append(str(project_dir))
-    callback = importlib.import_module("callback")
-    settings = importlib.import_module("settings")
+    assert project_dir.is_dir()
+    project_name = project_dir.name
+    path.append(str(project_dir.parent))
+    top_level = importlib.import_module(project_name)
+    callback = importlib.import_module(project_name + ".callback")
+    settings = importlib.import_module(project_name + ".settings")
 
     config = deepcopy(CONFIG_DEFAULTS)
     config["project_dir"] = project_dir
@@ -41,9 +42,11 @@ def load_project(project_dir: Path):
     return callback, config, fonts_info
 
 def unload_project(project_dir: Path):
-    project_dir = str(project_dir)
-    if project_dir not in path:
-        raise Exception(f"Project located at {project_dir} has not been loaded yet")
-    path.remove(project_dir)
-    del modules["callback"]
-    del modules["settings"]
+    project_name = project_dir.name
+    try:
+        path.remove(str(project_dir))
+        del modules[project_name]
+        del modules[project_name + ".callback"]
+        del modules[project_name + ".settings"]
+    except ValueError:
+        print("Project located at {project_dir} has not been loaded")
