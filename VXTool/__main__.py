@@ -4,9 +4,9 @@ from sys import argv, path
 from collections import OrderedDict
 from enum import Enum, auto
 
-from .app import _app
-from .core import Color
+from .app import App
 from .project import load_project
+from .font import FontBank
 
 class LAUNCH_MSG(Enum):
     NO_SETTINGS_FILE = auto()
@@ -20,35 +20,16 @@ def _main():
     project_dir: Path = Path(argv[1]) 
 
     callback, config, fonts_info = load_project(project_dir)
-    print(config)
 
-    TASKS: dict = {
-        'movie': _movie_task_call, # stitch rendered .png files into .mp4 movie
-        'create': _new_project_task_call # creates new project from VXTool_template
-    }
+    font_bank = FontBank()
+    for font_info in fonts_info:
+        font_bank.load(font_info)
 
-    # if you include more than one argument,
-    # the default behaviour i.e. to launch your intended project and
-    # execution of "end_tasks" specified in "APP" settings are ignored
-
-    # second argument is name of the command/task you want to use
-    if len(argv) > 2 and argv[2] in TASKS.keys():
-        call = TASKS.get(argv[2], None)
-        if call: 
-            call(config, msgs)
-        else:
-            msgs.extend((LAUNCH_MSG.TASK_FAIL, f'unknown command {argv[2]}'))
-        return msgs
-
-    _app(callback, config, fonts_info)
-
-    # "end_tasks" may be specified which are commands to be executed
-    # after successful _app launch 
-    for task in config['APP']['end_tasks']:
-        call = TASKS[task]
-        if call: call(config, msgs)
-
-    return msgs
+    app = App()
+    app.init_render_context(font_bank)
+    app.init_event_context()
+    app.apply_config(config)
+    app.run(callback)
 
 # Tasks
 def _movie_task_str(settings: OrderedDict) -> str:
@@ -92,5 +73,4 @@ def _new_project_task_call(settings: OrderedDict, msgs: list[LAUNCH_MSG], *args)
         msgs.extend((LAUNCH_MSG.TASK_FAIL, "_new_project_task_call"))
 
 if __name__ == '__main__':
-    msgs = _main()
-    print("VXTool launch messages", msgs)
+    _main()

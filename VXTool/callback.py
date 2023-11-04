@@ -7,7 +7,7 @@ from pygame import KEYDOWN, KEYUP
 from pygame import MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION
 from pygame.key import name as key_name
 
-from VXTool.render import RENDER_MSG
+from VXTool.render import FrameInfo, DotRendererProxy
 from VXTool.core import Dot, Buffer
 from VXTool.app import PickableEvent
 
@@ -17,10 +17,11 @@ class CallbackProcess(Process):
         pattern = r"^on_(?P<name>[a-z0-9]+)(?:_{1}(?P<attr>\w+))*$",
         flags = re.IGNORECASE
     )
-    def __init__(self, render_q: Queue, event_q: Queue):
+    def __init__(self, render_q: Queue, event_q: Queue, dot_renderer_proxy: DotRendererProxy):
         super().__init__()
         self._render_q: Queue = render_q
         self._event_q: Queue = event_q
+        self._dot_renderer_proxy: DotRendererProxy = dot_renderer_proxy
         self.updates_count: int = 0
 
         self._event_handlers: dict[str, Callable] = dict()
@@ -35,7 +36,7 @@ class CallbackProcess(Process):
         self.running = True
         while self.running:
             try:
-                self._dispatch_events(block = True, timeout=1.0)
+                self._dispatch_events()
                 self.update()
                 self.updates_count += 1
                 # print(f"CALLBACK FRAMES NO. {self.updates_count} {str(self.running)}")
@@ -76,38 +77,22 @@ class CallbackProcess(Process):
             handler = self._event_handlers.get((name, attr), None)
             if handler:
                 handler(event.attrs)
+    
+    def send(self, buffer: Buffer, clear: bool = True, quit: bool = False):
+        frame_info = FrameInfo(self.updates_count, clear_screen=clear, quit_after=quit)
 
-    def _buffer_to_data(self, buffer: Buffer):
-        data = []
-        new_dots = []
+        entry = []
         for pos, dots in buffer._container.items():
-            data.append(pos)
-            data.append(len(dots))
+            entry.append(pos)
+            entry.append(len(dots))
             for dot in dots:
-                _hash = hash(dot)
-                if _hash not in self._hash_to_dot:
-                    real_dot = dot.variant(Dot) if dot.__class__ != Dot else dot
-                    self._hash_to_dot[_hash] = real_dot
-                    new_dots.append((_hash, real_dot))
-                data.append(_hash)
-        return data, new_dots
+                hash_value = hash(dot)
+                if self._dot_renderer_proxy.register(dot, hash_value):
+                    frame_info.new_dots += 1
+                entry.append(hash_value)
 
-    def send(self, buffer: Buffer, flags: RENDER_MSG = RENDER_MSG.DEFAULT, *args):
-        entry = [flags, *args]
-        if not flags & RENDER_MSG.NO_CHANGE:
-            if not buffer:
-                raise ValueError('add RENDER_MSG.NO_CHANGE flag to send without the buffer.')                   
-            if flags & RENDER_MSG.REGISTER_DOTS:
-                raise ValueError('add RENDER_MSG.NO_CHANGE to register dots with RENDER_MSG.REGISTER_DOTS')
-
-            data, new_dots = self._buffer_to_data(buffer)
-            if new_dots:
-                entry[0] = entry[0] | RENDER_MSG.REGISTER_DOTS
-                entry.append(new_dots)
-            entry.append(data)
-
-        # print(f'CALLBACK ENTRY: {entry}')
-        self._render_q.put(tuple(entry), block=False)
+        self._render_q.put(frame_info)
+        self._render_q.put(entry)
 
     def setup(self):
         pass

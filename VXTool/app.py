@@ -1,6 +1,7 @@
 from queue import Empty as QueueEmpty
 from multiprocessing import Queue
 from pathlib import Path
+from types import ModuleType
 
 import pygame
 from pygame.time import Clock
@@ -13,7 +14,7 @@ from pygame import KMOD_CTRL
 
 from pygame._sdl2 import Window, Renderer, Texture
 
-from .render import DotRenderer, RENDER_MSG
+from .render import DotRenderer, DotRendererProxy, FrameInfo
 from .font import FontBank
 
 class PickableEvent:
@@ -93,51 +94,30 @@ class App:
         full_res = self._config["full_res"]
         block_size = full_res[0] // shape[0], full_res[1] // shape[1]
         return Rect((pos[0]*block_size[0], pos[1]*block_size[1]), block_size)
-    
-    def _process_render_entry(self, entry):
-        flags = entry[0]
-        args = list(entry[1:])
+        
+    def _render_next_frame(self, frame_info: FrameInfo):
+        self._renderer.target = self._render_tex
 
-        if not flags & RENDER_MSG.NO_CHANGE:
-            data = args.pop(0)
-            data_it = iter(data)
+        try:
+            entry = self._render_q.get()
+            entry_it = iter(entry)
             blits = []
             while True:
-                try:
-                    pos = next(data_it)
-                    rect = self.block_rect(pos)
-                    length = next(data_it)
-                    for _ in range(length):
-                        _hash = next(data_it)
-                        render = self._dot_renderer.get_render(_hash)
-                        blits.append((render, rect))
-                except StopIteration:
-                    break        
-
-            if not flags & RENDER_MSG.NO_CLEAR:
-                self.renderer.draw_color = self.backcolor
-                self.renderer.clear()
-            for render, rect in blits:
-                self.renderer.blit(render, rect)
-        
-        return flags
-            
-    def _render_next_frame(self, block: bool = True, timeout: float | None = None):
-        self.renderer.target = self._render_tex
-        
-        real_time = self._config.get("real_time", False)
-        block = self.frame == 0 or not real_time
-        flags = RENDER_MSG.CONTINUE
-        try:
-            while flags & RENDER_MSG.CONTINUE:
-                entry = self._render_q.get(block, timeout)
-                flags = self._process_render_entry(entry)
-                if flags & RENDER_MSG.STOP:
-                    self.running = False
-        except QueueEmpty:
+                pos = next(entry_it)
+                rect = self._block_rect(pos)
+                length = next(entry_it)
+                for _ in range(length):
+                    _hash = next(entry_it)
+                    render = self._dot_renderer.get_render(_hash)
+                    blits.append((render, rect))
+        except (QueueEmpty, StopIteration):
             pass
         
-        self.frame += 1
+            if frame_info.clear_screen:
+                self._renderer.draw_color = self._config["backcolor"]
+                self._renderer.clear()
+            for render, rect in blits:
+                self._renderer.blit(render, rect)
 
     def _process_events(self):
         self.running = not pygame.event.peek(QUIT)
@@ -152,8 +132,7 @@ class App:
 
         self._event_q.put(
             [PickableEvent.cast_from(event) for event in self._events], 
-            block = self._config["real_time"],
-            timeout = 1.0
+            block = True
         )
 
     def _process_shortcuts(self, captured: list):
@@ -163,6 +142,18 @@ class App:
                     self.running = False
                 case pygame.K_s:
                     self._screenshot(self._get_screenshot_filename(self.frame - 1))
+
+    def run(self, callback: ModuleType):
+        callback_cls = callback.Callback
+        self._callback_process = callback_cls(self._render_q, self._event_q, DotRendererProxy(self._dot_renderer))
+        self._callback_process.start()
+
+        self._main_loop()
+
+    def stop(self):
+        if self._callback_process:
+            self._callback_process.running = False
+            self._callback_process.join()
 
     def _main_loop(self):
         self.running = True
@@ -176,23 +167,26 @@ class App:
         clock.tick()
         while self.running:
             self._window.title = f"{clock.get_fps():.2}"
-
             self._process_events()
-            self._dot_renderer.process_queue()
-            self._render_next_frame()
+
+            frame_info: FrameInfo = self._render_q.get()
+            self._dot_renderer.process_queue(frame_info.new_dots)
+            self._render_next_frame(frame_info)
+
             self._renderer.target = None
             self._renderer.draw_color = self._config["backcolor"]
             self._renderer.clear()
-            self.renderer.blit(self._render_tex, None)
+            self._renderer.blit(self._render_tex, None)
                     
-            self.renderer.present()
+            self._renderer.present()
 
             should_record = record[0] <= self.frame < record[1] 
             if should_record:
                 self._screenshot(self._get_screenshot_filename())
             
-            if quit >= self.frame:
-                self.running = False
+            # if quit >= self.frame or frame_info.quit_after:
+            #     self.running = False
             
             self.frame += 1
             clock.tick(FPS)
+

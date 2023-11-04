@@ -7,12 +7,11 @@ BASE_DIR = Path(__file__).parent
 
 CONFIG = {
     "project_dir": BASE_DIR,
-    "backcolor": Color(0, 0, 0),
+    "backcolor": Color(125,125,125),
     "full_res": (512, 512),
     "shape": (16, 8),
     "render_size": (720, 720),
     "FPS": 30,
-    "quit": 0,
     "record": (0, 0),
 }
 

@@ -10,15 +10,12 @@ from pygame._sdl2 import Renderer, Texture
 from .core import Color, Dot
 from .font import FontBank
 
-class RENDER_MSG(Flag):
-    NO_CLEAR = auto() # Doesn't clear the screen before drawing content of the entry
-    NO_CHANGE = auto() # "I don't include any content into the entry"
-    CONTINUE = auto() # Process next entry immediately after this one
-    SET_BLOCK_SIZE = auto() # Resizes surface to match new dot size
-    REGISTER_DOTS = auto() # Register dots in _hash_to_dot dictionary
-    STOP = auto()
-    DEFAULT = auto()
-    PROCEDURE = NO_CHANGE | CONTINUE
+class FrameInfo:
+    def __init__(self, count: int, new_dots: int = 0, clear_screen: bool = True, quit_after: bool = False):
+        self.count: int = count
+        self.new_dots: int = new_dots
+        self.clear_screen: bool = clear_screen
+        self.quit_after: bool = quit_after
 
 class DotRenderer:
     def __init__(self, font_bank: FontBank, renderer: Renderer):
@@ -34,9 +31,9 @@ class DotRenderer:
         plain_dot = dot.variant(Dot) if dot.__class__ != Dot else dot
         self._hash_to_dot[hash_value] = plain_dot
 
-    def process_queue(self):
+    def process_queue(self, count: int = 1):
         try:
-            while True:
+            for _ in range(count):
                 dot, hash_value = self._new_dots_q.get()
                 self.register(dot, hash_value)
         except QueueEmpty:
@@ -46,13 +43,13 @@ class DotRenderer:
         if hash_value not in self._hash_to_dot:
             raise KeyError(f"No dot attributed with hash value {hash_value} has been registered yet")
         if hash_value not in self._cached_renders:
-            dot = self._hash_to_dot(hash_value)
+            dot = self._hash_to_dot[hash_value]
             render = self._render(dot)
             self._cached_renders[hash_value] = render
         return self._cached_renders[hash_value]
 
     def _render(self, dot: Dot):
-        font = self._font_bank.get(dot.font_name)
+        font = self.font_bank.get(dot.font_name)
 
         face = font.render(dot.letter, False, dot.color)
         face.set_alpha(dot.color.a)
@@ -74,7 +71,8 @@ class DotRendererProxy:
 
     def register(self, dot: Dot, hash_value: int):
         if hash_value in self._registered_hashes:
-            return
+            return False
         plain_dot = dot.variant(Dot) if dot.__class__ != Dot else dot
         self._new_dots_q.put((plain_dot, hash_value))
         self._registered_hashes.add(hash_value)
+        return True

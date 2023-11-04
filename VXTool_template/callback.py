@@ -1,7 +1,6 @@
 from VXTool.callback import CallbackProcess
-from VXTool.render import RENDER_MSG
 from VXTool.core import Color, Dot, Buffer
-# from VXTool.util import 
+from VXTool.util import words_line
 
 from .settings import colors
 
@@ -14,7 +13,9 @@ class Callback(CallbackProcess):
             font_name = "primary",
             clear = True
         )
-        self.send(None, RENDER_MSG.PROCEDURE | RENDER_MSG.SET_BLOCK_SIZE, self.base_dot)
 
     def update(self):
-        self.send(None, RENDER_MSG.NO_CHANGE)
+        buffer = Buffer()
+        for pos, letter in words_line("Hello", (0, 0)):
+            buffer.put(self.base_dot.variant(pos = pos, letter = letter))
+        self.send(buffer)
