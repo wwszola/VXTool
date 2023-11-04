@@ -36,7 +36,7 @@ class CallbackProcess(Process):
         self.running = True
         while self.running:
             try:
-                self._dispatch_events()
+                self._dispatch_events(True, 1.0)
                 self.update()
                 self.updates_count += 1
                 # print(f"CALLBACK FRAMES NO. {self.updates_count} {str(self.running)}")
