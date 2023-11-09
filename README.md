@@ -99,12 +99,13 @@ ___
 ||Process entry|
 
 ## TODO:
-- get rid of widgets, just single text render (yes just do it)
-- implement properly, document and test sync variants
+- screenshot with renderer setup
+- change into new settings in examples
+- handle window attribute in mouseevents properly
 - backcolor transparency isn't transparent
+- implement properly, document and test sync variants
 - sending multiple times from callback in the same frame implies continue flag, no need for that
 - a difference between clear and backcolor
-- default settings values
 - should render queue be divided into commands and data?
 - is blitting from a tileset faster than multiple surfaces?
 - Loading png tilesets
