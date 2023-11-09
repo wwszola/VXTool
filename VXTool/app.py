@@ -1,6 +1,7 @@
 from queue import Empty as QueueEmpty
 from multiprocessing import Queue
 from pathlib import Path
+from enum import Enum, auto
 from types import ModuleType
 
 import pygame
@@ -14,7 +15,7 @@ from pygame import KMOD_CTRL
 
 from pygame._sdl2 import Window, Renderer, Texture
 
-from .render import DotRenderer, DotRendererProxy, FrameInfo
+from .render import DotRenderer, RenderStore, RenderStoreProxy
 from .font import FontBank
 
 class PickableEvent:
@@ -46,6 +47,12 @@ class PickableEvent:
     def type_name(self):
         return self.attrs['type_name']
 
+class ACTION_MSG(Enum):
+    RENDER = auto()
+    CLEAR = auto()
+    UPDATE = auto()
+    QUIT = auto()
+
 class App:
     def __init__(self):
         if not pygame.get_init():
@@ -63,8 +70,10 @@ class App:
         self._renderer: Renderer = Renderer(self._window, target_texture = True)
         self._render_tex: Texture = None
 
+        self._msg_q: Queue[ACTION_MSG] = Queue()
         self._render_q: Queue = Queue()
         self._dot_renderer: DotRenderer = DotRenderer(font_bank, self._renderer)
+        self._render_store: RenderStore = RenderStore()
 
     def init_event_context(self):
         self._events: list = list()
@@ -94,30 +103,6 @@ class App:
         full_res = self._config["full_res"]
         block_size = full_res[0] // shape[0], full_res[1] // shape[1]
         return Rect((pos[0]*block_size[0], pos[1]*block_size[1]), block_size)
-        
-    def _render_next_frame(self, frame_info: FrameInfo):
-        self._renderer.target = self._render_tex
-
-        try:
-            entry = self._render_q.get()
-            entry_it = iter(entry)
-            blits = []
-            while True:
-                pos = next(entry_it)
-                rect = self._block_rect(pos)
-                length = next(entry_it)
-                for _ in range(length):
-                    _hash = next(entry_it)
-                    render = self._dot_renderer.get_render(_hash)
-                    blits.append((render, rect))
-        except (QueueEmpty, StopIteration):
-            pass
-        
-            if frame_info.clear_screen:
-                self._renderer.draw_color = self._config["backcolor"]
-                self._renderer.clear()
-            for render, rect in blits:
-                self._renderer.blit(render, rect)
 
     def _process_events(self):
         self.running = not pygame.event.peek(QUIT)
@@ -145,15 +130,69 @@ class App:
 
     def run(self, callback: ModuleType):
         callback_cls = callback.Callback
-        self._callback_process = callback_cls(self._render_q, self._event_q, DotRendererProxy(self._dot_renderer))
+        self._callback_process = callback_cls(self._msg_q, self._render_q, self._event_q, RenderStoreProxy(self._render_store))
         self._callback_process.start()
 
         self._main_loop()
+        self.stop()
 
     def stop(self):
         if self._callback_process:
             self._callback_process.running = False
             self._callback_process.join()
+
+    def _get_blits(self):
+        blits = []
+        try:
+            data = self._render_q.get(True, 1.0)
+            data_it = iter(data)
+            blits = []
+            while True:
+                pos = next(data_it)
+                rect = self._block_rect(pos)
+                length = next(data_it)
+                for _ in range(length):
+                    hash_value = next(data_it)
+                    render = self._render_store.get(hash_value)
+                    blits.append((render, rect))
+        except (QueueEmpty, StopIteration):
+            pass
+        return blits
+
+    def _render(self):
+        self._render_store.process(self._dot_renderer)
+        blits = self._get_blits()
+        self._renderer.target = self._render_tex
+        for render, rect in blits:
+            self._renderer.blit(render, rect)
+
+    def _clear(self):
+        self._renderer.target = self._render_tex
+        self._renderer.draw_color = self._config["backcolor"]
+        self._renderer.clear()
+
+    def _update_screen(self):
+        self._renderer.target = None
+        self._renderer.draw_color = self._config["backcolor"]
+        self._renderer.clear()
+        self._renderer.blit(self._render_tex, None)
+        self._renderer.present()
+
+    def _action_loop(self):
+        while True:
+            action: ACTION_MSG = self._msg_q.get()
+            match action:
+                case ACTION_MSG.RENDER:
+                    self._render()
+                case ACTION_MSG.CLEAR:
+                    self._clear()
+                case ACTION_MSG.UPDATE:
+                    self._update_screen()
+                    break
+                case ACTION_MSG.QUIT:
+                    self.running = False
+                    break
+
 
     def _main_loop(self):
         self.running = True
@@ -169,16 +208,7 @@ class App:
             self._window.title = f"{clock.get_fps():.2}"
             self._process_events()
 
-            frame_info: FrameInfo = self._render_q.get()
-            self._dot_renderer.process_queue(frame_info.new_dots)
-            self._render_next_frame(frame_info)
-
-            self._renderer.target = None
-            self._renderer.draw_color = self._config["backcolor"]
-            self._renderer.clear()
-            self._renderer.blit(self._render_tex, None)
-                    
-            self._renderer.present()
+            self._action_loop()
 
             should_record = record[0] <= self.frame < record[1] 
             if should_record:
