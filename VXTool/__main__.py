@@ -5,7 +5,7 @@ from collections import OrderedDict
 from enum import Enum, auto
 
 from .app import App
-from .project import load_project
+from .project import load_project, ProjectContext
 from .font import FontBank
 
 class LAUNCH_MSG(Enum):
@@ -19,17 +19,11 @@ def _main():
     # first argument is read as a directory to specified project
     project_dir: Path = Path(argv[1]) 
 
-    callback, config, fonts_info = load_project(project_dir)
-
-    font_bank = FontBank()
-    for font_info in fonts_info:
-        font_bank.load(font_info)
+    project: ProjectContext = load_project(project_dir)
 
     app = App()
-    app.init_render_context(font_bank)
-    app.init_event_context()
-    app.apply_config(config)
-    app.run(callback)
+
+    app.run(project)
 
 # Tasks
 def _movie_task_str(settings: OrderedDict) -> str:

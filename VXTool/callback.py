@@ -7,28 +7,25 @@ from pygame import KEYDOWN, KEYUP
 from pygame import MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION
 from pygame.key import name as key_name
 
-from VXTool.render import RenderStoreProxy
 from VXTool.core import Dot, Buffer
 from VXTool.app import PickableEvent, ACTION_MSG
-
 
 class CallbackProcess(Process):
     _event_handler_pattern: re.Pattern = re.compile(
         pattern = r"^on_(?P<name>[a-z0-9]+)(?:_{1}(?P<attr>\w+))*$",
         flags = re.IGNORECASE
     )
-    def __init__(self, msg_q: Queue, render_q: Queue, event_q: Queue, render_store_proxy: RenderStoreProxy):
+    def __init__(self, msg_q: Queue, data_q: Queue, event_q: Queue):
         super().__init__()
         self._msg_q: Queue = msg_q
-        self._render_q: Queue = render_q
+        self._data_q: Queue = data_q
         self._event_q: Queue = event_q
-        self._render_store_proxy: RenderStoreProxy = render_store_proxy
         self.updates_count: int = 0
 
         self._event_handlers: dict[str, Callable] = dict()
         self._prepare_event_handlers()
 
-        self._hash_to_dot: dict[int, Dot] = dict()
+        self._registered_hashes: set[int] = set()
 
         self.running = False
 
@@ -42,8 +39,6 @@ class CallbackProcess(Process):
                 self.updates_count += 1
             except QueueEmpty:
                 break
-
-        self._render_q.cancel_join_thread()
 
     def _prepare_event_handlers(self):
         for key in dir(self):
@@ -80,18 +75,25 @@ class CallbackProcess(Process):
     
     def send(self, buffer: Buffer, clear: bool = True, quit: bool = False):
         entry = []
+        new_dots = []
         for pos, dots in buffer._container.items():
             entry.append(pos)
             entry.append(len(dots))
             for dot in dots:
                 hash_value = hash(dot)
-                if not self._render_store_proxy.is_registered(hash_value):
-                    self._render_store_proxy.register(hash_value, dot)
+                if hash_value not in self._registered_hashes:
+                    plain_dot = dot.variant(Dot) if dot.__class__ != Dot else dot
+                    new_dots.append((hash_value, plain_dot))
+                    self._registered_hashes.add(hash_value)
                 entry.append(hash_value)
+        
+        if len(new_dots) > 0:
+            self._msg_q.put(ACTION_MSG.REGISTER_DOTS)
+            self._data_q.put(new_dots)
 
         self._msg_q.put(ACTION_MSG.CLEAR)
         self._msg_q.put(ACTION_MSG.RENDER)
-        self._render_q.put(entry)
+        self._data_q.put(entry)
         self._msg_q.put(ACTION_MSG.UPDATE)
 
     def setup(self):
