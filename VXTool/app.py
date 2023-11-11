@@ -199,8 +199,8 @@ class App:
         self.running = True
         self.frame = 0
 
-        FPS = self._current_project.config.get["FPS"]
-        record = self._current_project.config.get["record"]
+        FPS = self._current_project.config["FPS"]
+        record = self._current_project.config["record"]
         quit = self._current_project.config["quit"]
 
         clock = Clock()
