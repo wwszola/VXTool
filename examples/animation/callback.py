@@ -1,5 +1,4 @@
 from VXTool.callback import CallbackProcess
-from VXTool.render import RENDER_MSG
 from VXTool.core import Color, Dot, Buffer, AnimatedDot, AnimatedBuffer
 # from VXTool.util import 
 
@@ -9,13 +8,9 @@ class Callback(CallbackProcess):
             pos = (-1, -1), 
             letter = '█', 
             color = Color(0, 0, 0), 
-            font_family = "UniVGA16",  
-            font_size = 16,
+            font_name = "primary",
             clear = True
         )
-        self.send('Screen', None, RENDER_MSG.PROCEDURE | RENDER_MSG.SET_BLOCK_SIZE, self.base_dot)
-
-        colors = self.user_settings["COLORS"]
 
         self.pulse = self.base_dot.variant(AnimatedDot, pos = (5, 5))
         self.pulse.op_set(0, 'letter', 'ABCD')
@@ -27,5 +22,9 @@ class Callback(CallbackProcess):
         self.screen.put(self.pulse)
         
     def update(self):
+        self.clear()
+
         self.screen.advance()
-        self.send('Screen', self.screen)
+        self.draw(self.screen)
+
+        self.present()
