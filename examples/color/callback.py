@@ -1,7 +1,8 @@
 from VXTool.callback import CallbackProcess
-from VXTool.render import RENDER_MSG
 from VXTool.core import Color, Dot, Buffer
 from VXTool.util import words_line, line_seq
+
+from .settings import colors
 
 class Callback(CallbackProcess):
     def setup(self):
@@ -9,16 +10,9 @@ class Callback(CallbackProcess):
             pos = (-1, -1), 
             letter = '█', 
             color = Color(100, 70, 140), 
-            font_family = "UniVGA16",  
-            font_size = 16,
+            font_name = "primary",
             clear = False
         )
-        self.send('Screen', None, RENDER_MSG.PROCEDURE | RENDER_MSG.SET_BLOCK_SIZE, self.base_dot)
-        # lines above are needed at the beginning to initialize
-        # for more see example block_size
-
-        # access the colors that were provided in settings.json file
-        colors = self.user_settings["COLORS"]
 
         # this picture will be composed of three separate layers
         # each one represented by Buffer object
@@ -68,7 +62,9 @@ class Callback(CallbackProcess):
         self.screen.merge(layer2)
 
     def update(self):
-        self.send('Screen', self.screen)
+        self.clear()
+        self.draw(self.screen)
+        self.present()
 
     def on_KEYDOWN(self, attrs: dict):
         # every time a key is pressed down, draw full name of it
