@@ -8,6 +8,10 @@ from .project import load_project, ProjectContext
 def _create_new_project(project_dir: Path):
     template_dir = Path(__file__).parent.parent / 'VXTool_template'
     copytree(template_dir, project_dir)
+    try:
+        project_dir.joinpath("out").mkdir()
+    except FileExistsError:
+        pass
 
 def _main():
     parser = argparse.ArgumentParser(prog="VXTool")
