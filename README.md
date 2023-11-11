@@ -100,14 +100,10 @@ ___
 
 ## TODO:
 - screenshot with renderer setup
-- change into new settings in examples
 - handle window attribute in mouseevents properly
 - backcolor transparency isn't transparent
 - implement properly, document and test sync variants
-- sending multiple times from callback in the same frame implies continue flag, no need for that
 - a difference between clear and backcolor
-- should render queue be divided into commands and data?
-- is blitting from a tileset faster than multiple surfaces?
 - Loading png tilesets
 - Position as (pygame.math.Vector2)
 - cleaning up util ( constistency, remember about pygame Vector and Rect)
