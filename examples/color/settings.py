@@ -12,7 +12,6 @@ CONFIG = {
     "shape": (16, 8),
     "render_size": (720, 720),
     "FPS": 30,
-    "record": (0, 0),
 }
 
 FONTS = [
