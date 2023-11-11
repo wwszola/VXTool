@@ -73,7 +73,7 @@ class CallbackProcess(Process):
             if handler:
                 handler(event.attrs)
     
-    def send(self, buffer: Buffer, clear: bool = True, quit: bool = False):
+    def draw(self, buffer: Buffer):
         entry = []
         new_dots = []
         for pos, dots in buffer._container.items():
@@ -91,10 +91,18 @@ class CallbackProcess(Process):
             self._msg_q.put(ACTION_MSG.REGISTER_DOTS)
             self._data_q.put(new_dots)
 
-        self._msg_q.put(ACTION_MSG.CLEAR)
         self._msg_q.put(ACTION_MSG.RENDER)
         self._data_q.put(entry)
+
+    def clear(self):
+        self._msg_q.put(ACTION_MSG.CLEAR)
+
+    def present(self):
         self._msg_q.put(ACTION_MSG.UPDATE)
+
+    def quit(self):
+        self._msg_q.put(ACTION_MSG.QUIT)
+        self.running = False
 
     def setup(self):
         pass
