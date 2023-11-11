@@ -14,8 +14,8 @@ CONFIG_DEFAULTS = {
     "shape": (16, 8),
     "render_size": (720, 720),
     "FPS": 30,
-    "quit": 0,
-    "record": (0, 0),
+    "quit": -1,
+    "record": (-1, -1),
     "real_time": False,
     "out_dir": Path("out"),
 }

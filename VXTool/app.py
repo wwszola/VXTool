@@ -199,9 +199,9 @@ class App:
         self.running = True
         self.frame = 0
 
-        FPS = self._current_project.config.get("FPS", None)
-        record = self._current_project.config.get("record", (0, 0))
-        quit = self._current_project.config.get("quit", -1)
+        FPS = self._current_project.config.get["FPS"]
+        record = self._current_project.config.get["record"]
+        quit = self._current_project.config["quit"]
 
         clock = Clock()
         clock.tick()
@@ -214,10 +214,10 @@ class App:
             should_record = record[0] <= self.frame < record[1] 
             if should_record:
                 self._screenshot(self._get_screenshot_filename())
-            
-            # if quit >= self.frame or frame_info.quit_after:
-            #     self.running = False
-            
+
+            if quit >= 0 and self.frame >= quit:
+                self.running = False
+
             self.frame += 1
             clock.tick(FPS)
 
