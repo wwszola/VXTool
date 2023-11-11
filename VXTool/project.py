@@ -2,6 +2,8 @@ from pathlib import Path
 from sys import path, modules
 import importlib
 from copy import deepcopy
+from types import ModuleType
+from dataclasses import dataclass
 
 from .font import FontInfo
 from .core import Color
@@ -25,6 +27,20 @@ def get_out_dir(config: dict):
     else:
         return config["project_dir"] / config["out_dir"]
 
+@dataclass
+class ProjectContext:
+    callback_module: ModuleType
+    config: dict
+    fonts_info: list[FontInfo]
+
+    @property
+    def base_dir(self):
+        return self.config["project_dir"]
+
+    @property
+    def name(self):
+        return self.config["project_dir"].name
+
 def load_project(project_dir: Path):
     assert project_dir.is_dir()
     project_name = project_dir.name
@@ -39,14 +55,14 @@ def load_project(project_dir: Path):
     config["out_dir"] = get_out_dir(config)
 
     fonts_info = settings.FONTS
-    return callback, config, fonts_info
+    return ProjectContext(callback, config, fonts_info)
 
-def unload_project(project_dir: Path):
-    project_name = project_dir.name
+def unload_project(project: ProjectContext):
+    project_name = project.name
     try:
-        path.remove(str(project_dir))
+        path.remove(str(project.base_dir))
         del modules[project_name]
         del modules[project_name + ".callback"]
         del modules[project_name + ".settings"]
     except ValueError:
-        print("Project located at {project_dir} has not been loaded")
+        print("Project located at {project.base_dir} has not been loaded")
