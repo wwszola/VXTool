@@ -18,6 +18,8 @@ class Callback(CallbackProcess):
         self.grid = list(grid_seq(CONFIG["shape"]))
 
     def update(self):
+        self.clear()
+
         self.screen.clear()
 
         for pos in self.grid:
@@ -27,4 +29,5 @@ class Callback(CallbackProcess):
             self.screen.put(dot.variant(letter = 'C', color = colors['GREEN']))
             self.screen.put(dot.variant(letter = 'D', color = colors['BLUE']))
 
-        self.send(self.screen)
+        self.draw(self.screen)
+        self.present()
