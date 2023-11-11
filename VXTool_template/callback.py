@@ -1,8 +1,6 @@
 from VXTool.callback import CallbackProcess
 from VXTool.core import Color, Dot, Buffer
-from VXTool.util import words_line
-
-from .settings import colors
+# from VXTool.util import
 
 class Callback(CallbackProcess):
     def setup(self):
@@ -15,7 +13,5 @@ class Callback(CallbackProcess):
         )
 
     def update(self):
-        buffer = Buffer()
-        for pos, letter in words_line("Hello", (0, 0)):
-            buffer.put(self.base_dot.variant(pos = pos, letter = letter))
-        self.send(buffer)
+        self.clear()
+        self.present()
