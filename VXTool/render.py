@@ -36,7 +36,7 @@ class Canvas:
         self.render_tex = Texture(renderer, full_res, 32, target=True)
 
     def block_rect(self, pos: tuple[int, int]):
-        return Rect((pos[0]*self.block_size[0], pos[1]*self.block_size[0]), self.block_size)
+        return Rect((pos[0]*self.block_size[0], pos[1]*self.block_size[1]), self.block_size)
     
     def clear(self):
         self.renderer.target = self.render_tex
