@@ -70,7 +70,9 @@ class CallbackProcess(Process):
             elif event.type == MOUSEMOTION:
                 attr = ''
             handler = self._event_handlers.get((name, attr), None)
-            if handler:
+            if handler is None:
+                handler = self._event_handlers.get((name, ''), None)
+            if handler is not None:
                 handler(event.attrs)
     
     def draw(self, buffer: Buffer):
