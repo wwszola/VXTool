@@ -6,70 +6,44 @@ from pygame import SRCALPHA
 
 from pygame._sdl2 import Renderer, Texture
 
-from .core import Color, Dot
+from .core import Color, Dot, Rect
 from .font import FontBank
 
-class DotRenderer:
-    def __init__(self, font_bank: FontBank, renderer: Renderer):
-        self.font_bank: FontBank = font_bank
-        self.renderer: Renderer = renderer
+def generate_dot_tex(dot: Dot, font_bank: FontBank, renderer: Renderer):
+    font = font_bank.get(dot.font_name)
 
-    def render(self, dot: Dot):
-        font = self.font_bank.get(dot.font_name)
+    face = font.render(dot.letter, False, dot.color)
+    face.set_alpha(dot.color.a)
 
-        face = font.render(dot.letter, False, dot.color)
-        face.set_alpha(dot.color.a)
+    size = face.get_size()
+    render = Surface(size, SRCALPHA, 32)
+    backcolor = dot.backcolor 
+    if not dot.backcolor:
+        backcolor = Color(0, 0, 0, 0)
+    render.fill(backcolor)
 
-        size = face.get_size()
-        render = Surface(size, SRCALPHA, 32)
-        backcolor = dot.backcolor 
-        if not dot.backcolor:
-            backcolor = Color(0, 0, 0, 0)
-        render.fill(backcolor)
+    render.blit(face, (0, 0))
+    return Texture.from_surface(renderer, render)
 
-        render.blit(face, (0, 0))
-        return Texture.from_surface(self.renderer, render)
+class Canvas:
+    def __init__(self, shape: tuple[int, int], full_res: tuple[int, int], backcolor: Color, renderer: Renderer):
+        self.shape: tuple[int, int] = shape
+        self.full_res: tuple[int, int] = full_res
+        self.backcolor: Color = backcolor
+        self.renderer = renderer
 
-class RenderStore:
-    def __init__(self):
-        self._hash_to_dot: dict[int, Dot] = dict()
-        self._cached_renders: dict[int, Texture] = dict()
+        self.block_size = full_res[0]//shape[0], full_res[1]//shape[1]
+        self.render_tex = Texture(renderer, full_res, 32, target=True)
 
-        self._new_dots_q: Queue = Queue()
+    def block_rect(self, pos: tuple[int, int]):
+        return Rect((pos[0]*self.block_size[0], pos[1]*self.block_size[0]), self.block_size)
+    
+    def clear(self):
+        self.renderer.target = self.render_tex
+        self.renderer.draw_color = self.backcolor
+        self.renderer.clear()
 
-    def register(self, hash_value: int, dot: Dot):
-        plain_dot = dot.variant(Dot) if dot.__class__ != Dot else dot
-        self._hash_to_dot[hash_value] = plain_dot
-
-    def is_registered(self, hash_value: int):
-        return hash_value in self._hash_to_dot
-
-    def retrieve(self, hash_value: int) -> Dot:
-        return self._hash_to_dot[hash_value]
-
-    def process(self, dot_renderer: DotRenderer):
-        try:
-            while True:
-                hash_value, dot = self._new_dots_q.get(False)
-                self.set(hash_value, dot_renderer.render(dot))            
-        except QueueEmpty:
-            pass
-
-    def set(self, hash_value: int, render: Texture):
-        self._cached_renders[hash_value] = render
-
-    def get(self, hash_value: int) -> Texture:
-        return self._cached_renders[hash_value]
-
-class RenderStoreProxy:
-    def __init__(self, render_store: RenderStore):
-        self._registered_hashes: set[int] = set()
-        self._new_dots_q: Queue = render_store._new_dots_q
-
-    def is_registered(self, hash_value: int):
-        return hash_value in self._registered_hashes
-
-    def register(self, hash_value: int, dot: Dot):
-        plain_dot = dot.variant(Dot) if dot.__class__ != Dot else dot
-        self._new_dots_q.put((hash_value, plain_dot))
-        self._registered_hashes.add(hash_value)
+    def render_blocks(self, blocks: list[tuple[Texture, Rect]]):
+        self.renderer.target = self.render_tex
+        for render, rect in blocks:
+            self.renderer.blit(render, rect)
