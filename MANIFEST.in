@@ -1,3 +1,4 @@
-include VXTool_template/settings.json
+include VXTool_template/__init__.py
+include VXTool_template/settings.py
 include VXTool_template/callback.py
 include VXTool_template/UniVGA16.ttf
