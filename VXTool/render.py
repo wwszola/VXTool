@@ -1,7 +1,7 @@
-from pygame import SRCALPHA, Surface
+from pygame import SRCALPHA, Rect, Surface
 from pygame._sdl2 import Renderer, Texture
 
-from .core import Color, Dot, Rect
+from .core import Color, Dot
 from .font import FontBank
 
 
