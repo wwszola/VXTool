@@ -14,7 +14,7 @@ def _create_new_project(project_dir: Path):
 def _ffmpeg_movie_stitch(out_dir: Path, src_FPS: float):
     movie_FPS = 60
     img_path = str(out_dir / "frame_%05d.png")
-    movie_path = str(out_dir / "movie.mp4").as_posix()
+    movie_path = str(out_dir / "movie.mp4")
     command = f"ffmpeg -framerate {src_FPS} -i {img_path} -c:v libx264 -pix_fmt yuv420p -vf scale=out_color_matrix=bt709 -r {movie_FPS} {movie_path}"  # noqa: E501
     from os import system
 
