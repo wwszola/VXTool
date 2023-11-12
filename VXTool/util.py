@@ -2,7 +2,9 @@ import random
 from math import cos, pi, sin, sqrt
 from typing import Callable, Generator, Iterator
 
-from .core import AnimatedDot, Color, Rect
+from pygame import Rect
+
+from .core import AnimatedDot, Color
 
 
 def plot_func(
