@@ -13,10 +13,19 @@ def _create_new_project(project_dir: Path):
     except FileExistsError:
         pass
 
+def _ffmpeg_movie_stitch(out_dir: Path, src_FPS: float):
+    movie_FPS = 60
+    img_path = str(out_dir / "frame_%05d.png")
+    movie_path = str(out_dir / "movie.mp4").as_posix()
+    command = f"ffmpeg -framerate {src_FPS} -i {img_path} -c:v libx264 -pix_fmt yuv420p -vf scale=out_color_matrix=bt709 -r {movie_FPS} {movie_path}"
+    from os import system
+    system(command)
+
 def _main():
     parser = argparse.ArgumentParser(prog="VXTool")
     parser.add_argument("project_dir", type=Path, help="path specyfing project directory")
     parser.add_argument("-c", "--create", action="store_true", help="create an empty project at project_dir")
+    parser.add_argument("-m", "--movie", action="store_true", help="produce a .mp4 file, composing .png files from out directory")
 
     args = parser.parse_args()
 
@@ -26,30 +35,13 @@ def _main():
 
     project: ProjectContext = load_project(args.project_dir)
 
+    if args.movie:
+        _ffmpeg_movie_stitch(project.config["out_dir"], project.config["FPS"])
+        return
+    
     app = App()
 
     app.run(project)
-
-# Tasks
-# def _movie_task_str(settings: OrderedDict) -> str:
-#     # this is ffmpeg sequence that worked for me
-#     # compression, color formats may be adjustable
-#     app_fps = settings['APP']['FPS']
-#     movie_fps = 60
-#     out_dir = settings['USER']['out_dir']
-#     img_path = (out_dir / 'frame_%05d.png').as_posix()
-#     movie_path = (out_dir / 'movie.mp4').as_posix()
-#     return f'ffmpeg -framerate {app_fps} -i {img_path} -c:v libx264 -pix_fmt yuv420p -vf scale=out_color_matrix=bt709 -r {movie_fps} {movie_path}'
-
-# def _movie_task_call(settings: OrderedDict, msgs: list[LAUNCH_MSG], *args):
-#     if LAUNCH_MSG.NO_SETTINGS_FILE in msgs:
-#         msgs.extend((LAUNCH_MSG.TASK_FAIL, "_movie_task_call"))
-#         return
-    
-#     from os import system
-#     system(_movie_task_str(settings))
-
-#     msgs.extend((LAUNCH_MSG.TASK_SUCCESS, "_movie_task_call"))
 
 if __name__ == '__main__':
     _main()
