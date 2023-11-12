@@ -1,6 +1,6 @@
 [project]
 name = "VXTool"
-version = "0.1"
+version = "0.2"
 dependencies = [
     "pygame==2.1.2",
 ]
