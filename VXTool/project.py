@@ -22,11 +22,11 @@ CONFIG_DEFAULTS = {
 
 
 def get_out_dir(config: dict):
-    out_dir = config["out_dir"]
-    if out_dir.is_absolute():
-        return out_dir
-    else:
-        return config["project_dir"] / config["out_dir"]
+    out_dir: Path = config["out_dir"]
+    if not out_dir.is_absolute():
+        out_dir = config["project_dir"] / config["out_dir"]
+    out_dir.mkdir(exist_ok=True)
+    return out_dir
 
 
 @dataclass

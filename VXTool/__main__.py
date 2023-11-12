@@ -9,10 +9,6 @@ from .project import ProjectContext, load_project
 def _create_new_project(project_dir: Path):
     template_dir = Path(__file__).parent.parent / "VXTool_template"
     copytree(template_dir, project_dir)
-    try:
-        project_dir.joinpath("out").mkdir()
-    except FileExistsError:
-        pass
 
 
 def _ffmpeg_movie_stitch(out_dir: Path, src_FPS: float):
