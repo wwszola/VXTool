@@ -82,7 +82,9 @@ class App:
         self._current_project = project
         self._canvas = Canvas(project.config["shape"], project.config["full_res"], project.config["backcolor"], self._renderer)
         
-        self._window.size = project.config["render_size"]
+        render_size = project.config["render_size"]
+        self._window.size = render_size
+        self._renderer.logical_size = render_size
 
         for font_info in project.fonts_info:
             self._font_bank.load(font_info)
@@ -163,12 +165,10 @@ class App:
         self._canvas.clear()
 
     def _canvas_rect(self):
-        window_size = self._window.size
         render_size = self._current_project.config["render_size"]
-        scale = window_size[0]/render_size[0], window_size[1]/render_size[1]
         full_res = self._canvas.full_res
-        canvas_rect = Rect(0, 0, int(full_res[0]*scale[0]), int(full_res[1]*scale[1]))
-        canvas_rect.center = window_size[0]//2, window_size[1]//2
+        canvas_rect = Rect((0, 0), full_res)
+        canvas_rect.center = render_size[0]//2, render_size[1]//2
         return canvas_rect
 
     def _update_screen(self):
