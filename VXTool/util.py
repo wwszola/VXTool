@@ -4,24 +4,6 @@ import random
 
 from .core import Color, Rect, Dot, AnimatedDot
 
-def animation(dot: Dot, **changes: dict[str, Iterable]):
-    sorted = {}
-    for name, frames in changes.items():
-        for i, value in enumerate(frames):
-            values = sorted.setdefault(i, dict()) 
-            values[name] = value
-    max_len = max(sorted.keys())
-    for i in range(max_len + 1):
-        yield dot.variant(**sorted[i])
-
-def sign(x):
-    if x > 1e-16: return 1
-    elif x < 1e-16: return -1
-    else: return 1
-    
-def snap(x):
-    return sign(x) * (int(abs(x)))
-
 def plot_func(func, size, x_range = (0, 1), y_range = (-1, 1), offset = (0, 0), snap: Callable = round):
     W, H = size
     left_W = - (W//2)
