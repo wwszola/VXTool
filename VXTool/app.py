@@ -7,7 +7,7 @@ from types import ModuleType
 import pygame
 from pygame.time import Clock
 from pygame.event import Event, event_name
-from pygame import Rect
+from pygame import Surface, Rect
 
 from pygame import QUIT, KEYDOWN, KEYUP
 from pygame import MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION
@@ -102,7 +102,8 @@ class App:
     
     def _screenshot(self, filename: str | Path):
         filename = str(filename)
-        raise NotImplementedError("Saving a screen using sdl2 renderer")
+        screen: Surface = self._renderer.to_surface()
+        pygame.image.save(screen, filename)
 
     def _process_events(self):
         self.running = not pygame.event.peek(QUIT)
