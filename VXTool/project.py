@@ -34,7 +34,7 @@ class ProjectContext:
     fonts_info: list[FontInfo]
 
     @property
-    def base_dir(self):
+    def project_dir(self):
         return self.config["project_dir"]
 
     @property
@@ -60,9 +60,9 @@ def load_project(project_dir: Path):
 def unload_project(project: ProjectContext):
     project_name = project.name
     try:
-        path.remove(str(project.base_dir))
+        path.remove(str(project.project_dir))
         del modules[project_name]
         del modules[project_name + ".callback"]
         del modules[project_name + ".settings"]
     except ValueError:
-        print("Project located at {project.base_dir} has not been loaded")
+        print(f"Project located at {project.project_dir} has not been loaded yet.")
