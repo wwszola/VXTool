@@ -22,13 +22,13 @@ Building the package with `build` tool creates a `dist` directory containing fil
 ___
 
 ## Template
-[Template directory](VXTool_template) presents minimal project structure. Its [settings file](VXTool_template/settings.json) contains all settings needed for launch. [Callback file](VXTool_template/callback.py) is your sandbox.\
+[Template directory](VXTool_template) presents minimal project structure. Its [settings file](VXTool_template/settings.py) contains all settings needed for launch. [Callback file](VXTool_template/callback.py) is your sandbox.\
 To create a new project from this template use:
 ```
-py -m VXTool ./path/to_the_new/project/ create
+py -m VXTool ./path/to_the_new/project/ --create
 ```
 A font file `UniVGA16.ttf` is provided in the template project. \
-You may add your `*.ttf` font into the project directory and specify its name in `settings.json` under `["APP"]["preload_fonts"]`.
+You may add your `*.ttf` font into the project directory and specify its information in `settings.py`.
 
 ### UniVGA16 font
 Template project and examples contain `UniVGA16.ttf` font file. The file originally can be accessed [here](https://github.com/mirror/reactos/blob/c6d2b35ffc91e09f50dfb214ea58237509329d6b/reactos/media/fonts/UniVGA16.ttf) under attached [license](https://github.com/mirror/reactos/tree/master/reactos/media/fonts/doc/UniVGA). Originally created by [Dmitry Bolkhovityanov](https://www.inp.nsk.su/~bolkhov/files/fonts/univga/). The font is also a part of [reactOS](https://reactos.org/).
@@ -40,7 +40,6 @@ Template project and examples contain `UniVGA16.ttf` font file. The file origina
 ### Follow examples
 Not all examples aren't basic or concise. Some of them act as a documentation :)
 - [colors](examples/color/callback.py) - Use text with colors to draw a static picture.
-- [block_size](examples/block_size/callback.py) - Why do you need to and how to set block_size.
 - [animation](examples/animation/callback.py) - Simple animated dot.Letter changing, moving.
 - [stress](examples/stress/callback.py) - Primitive system level benchmark.
 ___
