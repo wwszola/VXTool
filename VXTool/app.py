@@ -2,7 +2,7 @@ from queue import Empty as QueueEmpty
 from multiprocessing import Queue
 from pathlib import Path
 from enum import Enum, auto
-from types import ModuleType
+from itertools import chain
 
 import pygame
 from pygame.time import Clock
@@ -68,7 +68,6 @@ class App:
         self._msg_q: Queue[ACTION_MSG] = Queue()
         self._data_q: Queue = Queue()
 
-        self._events: list = list()
         self._event_q: Queue = Queue()
 
         self.running = False
@@ -108,18 +107,17 @@ class App:
     def _process_events(self):
         self.running = not pygame.event.peek(QUIT)
 
-        key_events = pygame.event.get((KEYDOWN, KEYUP))
+        keydowns = pygame.event.get(KEYDOWN)
+        keyups = pygame.event.get(KEYUP)
         mouse_events = pygame.event.get((MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION))
-        self._events.clear()
-        self._events.extend(key_events + mouse_events)
-
-        captured = list(filter(lambda event: bool(event.mod & KMOD_CTRL), key_events))
-        self._process_shortcuts(captured)
 
         self._event_q.put(
-            [PickableEvent.cast_from(event) for event in self._events], 
+            [PickableEvent.cast_from(event) for event in chain(keydowns, keyups, mouse_events)], 
             block = True
         )
+
+        captured = list(filter(lambda event: bool(event.mod & KMOD_CTRL), keydowns))
+        self._process_shortcuts(captured)
 
     def _process_shortcuts(self, captured: list):
         for event in captured:
