@@ -15,11 +15,7 @@ CONFIG = {
 }
 
 FONTS = [
-    FontInfo(BASE_DIR/"UniVGA16.ttf", 16, "primary"),
+    FontInfo(BASE_DIR / "UniVGA16.ttf", 16, "primary"),
 ]
 
-colors = {
-    "RED": Color(255, 0, 0),
-    "GREEN": Color(0, 255, 0),
-    "BLUE": Color(0, 0, 255)
-}
+colors = {"RED": Color(255, 0, 0), "GREEN": Color(0, 255, 0), "BLUE": Color(0, 0, 255)}

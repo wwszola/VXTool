@@ -1,10 +1,9 @@
-from dataclasses import dataclass, field
-from typing import Iterator, Generator, NamedTuple, Iterable
 from copy import copy, deepcopy
 from enum import Enum, auto
+from typing import Generator, Iterable, Iterator, NamedTuple
 
 from pygame import Color as PyGameColor
-from pygame import Rect
+
 
 class Color(PyGameColor):
     def __hash__(self):
@@ -12,18 +11,24 @@ class Color(PyGameColor):
 
     def __getstate__(self):
         return tuple(self)
-    
+
     def __setstate__(self, rgba):
         self.update(rgba)
 
+
 BLACK = Color(0, 0, 0, 255)
 
+
 class Dot:
-    def __init__(self, pos: tuple[int, int] = None, letter: str = None,
-            color: Color = None, backcolor: Color = None, 
-            font_name: str | None = None,
-            clear: bool = True
-            ):
+    def __init__(
+        self,
+        pos: tuple[int, int] = None,
+        letter: str = None,
+        color: Color = None,
+        backcolor: Color = None,
+        font_name: str | None = None,
+        clear: bool = True,
+    ):
         self.pos: tuple[int, int] = pos
         self.letter: str = letter
         self.color: Color = color
@@ -43,12 +48,17 @@ class Dot:
 
     def __hash__(self) -> int:
         # excluding self.pos
-        return hash((
-            self.letter, self.color, self.backcolor,
-            self.font_name, self.clear,
-        ))
+        return hash(
+            (
+                self.letter,
+                self.color,
+                self.backcolor,
+                self.font_name,
+                self.clear,
+            )
+        )
 
-    def variant(self, variant_class = None, **kwargs):
+    def variant(self, variant_class=None, **kwargs):
         if variant_class is None:
             variant_class = self.__class__
         new_dot = variant_class()
@@ -61,7 +71,8 @@ class Dot:
                 setattr(new_dot, name, value)
         return new_dot
 
-class Buffer():
+
+class Buffer:
     def __init__(self, dot_seq: Iterator[Dot] = []):
         self._container: dict[tuple[int, int], list[Dot]] = dict()
         if dot_seq:
@@ -99,7 +110,7 @@ class Buffer():
                 del self._container[dot.pos]
         except (KeyError, ValueError):
             pass
-    
+
     def erase_at(self, pos: tuple[int, int], idx: int = -1):
         try:
             local = self._container[pos]
@@ -127,13 +138,13 @@ class Buffer():
         try:
             local = self._container[pos]
             old_dot = local.pop(idx)
-            if 'pos' in list(kwargs.keys()):
+            if "pos" in list(kwargs.keys()):
                 del kwargs[pos]
             new_dot = old_dot.variant(**kwargs)
             local.insert(idx, new_dot)
         except (KeyError, IndexError):
             pass
-    
+
     def dot_seq(self) -> Generator:
         for pos, dots in self._container.items():
             yield from dots
@@ -143,7 +154,9 @@ class Buffer():
 
     def cut(self, mask: Iterator[tuple[int, int]]):
         for pos in mask:
-            if pos in self._container: del self._container[pos]
+            if pos in self._container:
+                del self._container[pos]
+
 
 class ANIMATION_OP(Enum):
     SET = auto()
@@ -151,6 +164,7 @@ class ANIMATION_OP(Enum):
     JMP = auto()
     MOVE = auto()
     MOVE_TO = auto()
+
 
 class AnimationOp(NamedTuple):
     counter: int
@@ -160,6 +174,7 @@ class AnimationOp(NamedTuple):
     def __str__(self):
         return f"{self.counter}: {self.op_type.name} {self.args}"
 
+
 class AnimatedDot(Dot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -168,7 +183,7 @@ class AnimatedDot(Dot):
         self.instruction_pointer = 0
         self.new_pos: tuple[int, int] = None
 
-    def variant(self, variant_class = None, option: str = "ref", **kwargs):
+    def variant(self, variant_class=None, option: str = "ref", **kwargs):
         if variant_class is None:
             variant_class = AnimatedDot
         new_dot = super().variant(variant_class, **kwargs)
@@ -204,12 +219,26 @@ class AnimatedDot(Dot):
         if hasattr(self, attr_name):
             if isinstance(value, Iterable):
                 for i, x in enumerate(value):
-                    self._add_op(AnimationOp(self.frame_counter + delta_time + i, ANIMATION_OP.SET, (attr_name, x)))
+                    self._add_op(
+                        AnimationOp(
+                            self.frame_counter + delta_time + i,
+                            ANIMATION_OP.SET,
+                            (attr_name, x),
+                        )
+                    )
             else:
-                self._add_op(AnimationOp(self.frame_counter + delta_time, ANIMATION_OP.SET, (attr_name, value)))
+                self._add_op(
+                    AnimationOp(
+                        self.frame_counter + delta_time,
+                        ANIMATION_OP.SET,
+                        (attr_name, value),
+                    )
+                )
 
     def op_stop(self, delta_time):
-        self._add_op(AnimationOp(self.frame_counter + delta_time, ANIMATION_OP.STOP, None))
+        self._add_op(
+            AnimationOp(self.frame_counter + delta_time, ANIMATION_OP.STOP, None)
+        )
 
     def op_jmp(self, delta_time: int, dst_delta_time: int):
         op_time = self.frame_counter + delta_time
@@ -238,7 +267,9 @@ class AnimatedDot(Dot):
             if self.instruction_pointer >= len(self.instructions):
                 break
             op = self.instructions[self.instruction_pointer]
-            if self.frame_counter < op.counter: # does nothing when no instructions for now
+            if (
+                self.frame_counter < op.counter
+            ):  # does nothing when no instructions for now
                 break
             match op.op_type:
                 case ANIMATION_OP.STOP:
@@ -247,15 +278,21 @@ class AnimatedDot(Dot):
                     setattr(self, op.args[0], op.args[1])
                 case ANIMATION_OP.JMP:
                     self.frame_counter = op.args[0]
-                    self.instruction_pointer = self._find_instruction_pointer(op.args[0]) - 1
+                    self.instruction_pointer = (
+                        self._find_instruction_pointer(op.args[0]) - 1
+                    )
                 case ANIMATION_OP.MOVE:
-                    self.new_pos = self.pos[0] + op.args[0][0], self.pos[1] + op.args[0][1]
+                    self.new_pos = (
+                        self.pos[0] + op.args[0][0],
+                        self.pos[1] + op.args[0][1],
+                    )
                 case ANIMATION_OP.MOVE_TO:
                     self.new_pos = op.args[0]
             self.instruction_pointer += 1
         self.frame_counter += 1
         return result
-    
+
+
 class AnimatedBuffer(Buffer):
     def __init__(self):
         super().__init__()
@@ -280,6 +317,8 @@ class AnimatedBuffer(Buffer):
                 dot.new_pos = None
                 super().put(dot)
         for i, (idx, dot) in enumerate(dead_dots_idx):
-            self.animated_dots.pop(idx - i) # removing elements starts from the left, dead_dots_idx is sorted
+            self.animated_dots.pop(
+                idx - i
+            )  # removing elements starts from the left, dead_dots_idx is sorted
             self.erase(dot)
         self.counter += 1

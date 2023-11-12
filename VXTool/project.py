@@ -1,12 +1,12 @@
-from pathlib import Path
-from sys import path, modules
 import importlib
 from copy import deepcopy
-from types import ModuleType
 from dataclasses import dataclass
+from pathlib import Path
+from sys import modules, path
+from types import ModuleType
 
-from .font import FontInfo
 from .core import Color
+from .font import FontInfo
 
 CONFIG_DEFAULTS = {
     "backcolor": Color(0, 0, 0),
@@ -20,12 +20,14 @@ CONFIG_DEFAULTS = {
     "out_dir": Path("out"),
 }
 
+
 def get_out_dir(config: dict):
     out_dir = config["out_dir"]
     if out_dir.is_absolute():
         return out_dir
     else:
         return config["project_dir"] / config["out_dir"]
+
 
 @dataclass
 class ProjectContext:
@@ -41,11 +43,12 @@ class ProjectContext:
     def name(self):
         return self.config["project_dir"].name
 
+
 def load_project(project_dir: Path):
     assert project_dir.is_dir()
     project_name = project_dir.name
     path.append(str(project_dir.parent))
-    top_level = importlib.import_module(project_name)
+    _top_level = importlib.import_module(project_name)
     callback = importlib.import_module(project_name + ".callback")
     settings = importlib.import_module(project_name + ".settings")
 
@@ -56,6 +59,7 @@ def load_project(project_dir: Path):
 
     fonts_info = settings.FONTS
     return ProjectContext(callback, config, fonts_info)
+
 
 def unload_project(project: ProjectContext):
     project_name = project.name

@@ -1,29 +1,35 @@
-from queue import Empty as QueueEmpty
-from multiprocessing import Queue
-from pathlib import Path
 from enum import Enum, auto
 from itertools import chain
+from multiprocessing import Queue
+from pathlib import Path
+from queue import Empty as QueueEmpty
 
 import pygame
-from pygame.time import Clock
+from pygame import (
+    KEYDOWN,
+    KEYUP,
+    KMOD_CTRL,
+    MOUSEBUTTONDOWN,
+    MOUSEBUTTONUP,
+    MOUSEMOTION,
+    QUIT,
+    Rect,
+    Surface,
+)
+from pygame._sdl2 import Renderer, Texture, Window
 from pygame.event import Event, event_name
-from pygame import Surface, Rect
+from pygame.time import Clock
 
-from pygame import QUIT, KEYDOWN, KEYUP
-from pygame import MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION
-from pygame import KMOD_CTRL
-
-from pygame._sdl2 import Window, Renderer, Texture
-
+from .font import FontBank
 from .project import ProjectContext
 from .render import Canvas, generate_dot_tex
-from .font import FontBank
+
 
 class PickableEvent:
     def __init__(self, type: int, attrs: dict = {}):
         self.type = type
         self.attrs = attrs
-        self.attrs['type_name'] = event_name(self.type)
+        self.attrs["type_name"] = event_name(self.type)
         if "window" in self.attrs:
             del self.attrs["window"]
 
@@ -39,14 +45,15 @@ class PickableEvent:
 
     def __getstate__(self):
         return (self.type, self.attrs)
-    
+
     def __setstate__(self, state):
         self.type = state[0]
         self.attrs = state[1]
 
     @property
     def type_name(self):
-        return self.attrs['type_name']
+        return self.attrs["type_name"]
+
 
 class ACTION_MSG(Enum):
     REGISTER_DOTS = auto()
@@ -55,12 +62,13 @@ class ACTION_MSG(Enum):
     UPDATE = auto()
     QUIT = auto()
 
+
 class App:
     def __init__(self):
         if not pygame.get_init():
             pygame.init()
-        
-        self._window: Window = Window(resizable = True)
+
+        self._window: Window = Window(resizable=True)
         self._renderer: Renderer = Renderer(self._window, target_texture=True)
         self._cached_renders: dict[int, Texture] = dict()
         self._font_bank = FontBank()
@@ -79,8 +87,13 @@ class App:
 
     def run(self, project: ProjectContext):
         self._current_project = project
-        self._canvas = Canvas(project.config["shape"], project.config["full_res"], project.config["backcolor"], self._renderer)
-        
+        self._canvas = Canvas(
+            project.config["shape"],
+            project.config["full_res"],
+            project.config["backcolor"],
+            self._renderer,
+        )
+
         render_size = project.config["render_size"]
         self._window.size = render_size
         self._renderer.logical_size = render_size
@@ -88,7 +101,9 @@ class App:
         for font_info in project.fonts_info:
             self._font_bank.load(font_info)
 
-        self._callback_process = project.callback_module.Callback(self._msg_q, self._data_q, self._event_q)
+        self._callback_process = project.callback_module.Callback(
+            self._msg_q, self._data_q, self._event_q
+        )
         self._callback_process.start()
 
         self._main_loop()
@@ -98,7 +113,7 @@ class App:
         if _frame is None:
             _frame = self.frame
         return self._current_project.config["out_dir"] / f"frame_{_frame:0>5}.png"
-    
+
     def _screenshot(self, filename: str | Path):
         filename = str(filename)
         screen: Surface = self._renderer.to_surface()
@@ -112,8 +127,11 @@ class App:
         mouse_events = pygame.event.get((MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION))
 
         self._event_q.put(
-            [PickableEvent.cast_from(event) for event in chain(keydowns, keyups, mouse_events)], 
-            block = True
+            [
+                PickableEvent.cast_from(event)
+                for event in chain(keydowns, keyups, mouse_events)
+            ],
+            block=True,
         )
 
         captured = list(filter(lambda event: bool(event.mod & KMOD_CTRL), keydowns))
@@ -135,9 +153,9 @@ class App:
     def _register_dots(self):
         new_dots = self._data_q.get()
         for hash_value, dot in new_dots:
-            tex = generate_dot_tex(dot, self._font_bank, self._renderer) 
+            tex = generate_dot_tex(dot, self._font_bank, self._renderer)
             self._cached_renders[hash_value] = tex
-        
+
     def _get_blits(self):
         blits = []
         try:
@@ -155,7 +173,7 @@ class App:
         except (QueueEmpty, StopIteration):
             pass
         return blits
-    
+
     def _render(self):
         blits = self._get_blits()
         self._canvas.render_blocks(blits)
@@ -167,7 +185,7 @@ class App:
         render_size = self._current_project.config["render_size"]
         full_res = self._canvas.full_res
         canvas_rect = Rect((0, 0), full_res)
-        canvas_rect.center = render_size[0]//2, render_size[1]//2
+        canvas_rect.center = render_size[0] // 2, render_size[1] // 2
         return canvas_rect
 
     def _update_screen(self):
@@ -210,7 +228,7 @@ class App:
 
             self._action_loop()
 
-            should_record = record[0] <= self.frame < record[1] 
+            should_record = record[0] <= self.frame < record[1]
             if should_record:
                 self._screenshot(self._get_screenshot_filename())
 
@@ -219,4 +237,3 @@ class App:
 
             self.frame += 1
             clock.tick(FPS)
-

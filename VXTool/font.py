@@ -2,11 +2,13 @@ from pathlib import Path
 
 import pygame.font as pgfont
 
+
 def construct_font_name(path: str | Path, ptsize: int, name: str = "") -> str:
     if isinstance(path, str):
         path = Path(path)
-    filename = path.name.split('.')[0]
+    filename = path.name.split(".")[0]
     return f"{filename}{ptsize}"
+
 
 class FontInfo:
     def __init__(self, path: str | Path, ptsize: int, name: str = ""):
@@ -17,6 +19,7 @@ class FontInfo:
         if len(name) == 0:
             name = construct_font_name(self.path, self.ptsize)
         self.name: str = name
+
 
 class FontBank:
     def __init__(self):

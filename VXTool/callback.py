@@ -1,20 +1,20 @@
-from typing import Callable
-from multiprocessing import Process, Queue
 import re
+from multiprocessing import Process, Queue
 from queue import Empty as QueueEmpty
+from typing import Callable
 
-from pygame import KEYDOWN, KEYUP
-from pygame import MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION
+from pygame import KEYDOWN, KEYUP, MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION
 from pygame.key import name as key_name
 
-from VXTool.core import Dot, Buffer
-from VXTool.app import PickableEvent, ACTION_MSG
+from VXTool.app import ACTION_MSG, PickableEvent
+from VXTool.core import Buffer, Dot
+
 
 class CallbackProcess(Process):
     _event_handler_pattern: re.Pattern = re.compile(
-        pattern = r"^on_(?P<name>[a-z0-9]+)(?:_{1}(?P<attr>\w+))*$",
-        flags = re.IGNORECASE
+        pattern=r"^on_(?P<name>[a-z0-9]+)(?:_{1}(?P<attr>\w+))*$", flags=re.IGNORECASE
     )
+
     def __init__(self, msg_q: Queue, data_q: Queue, event_q: Queue):
         super().__init__()
         self._msg_q: Queue = msg_q
@@ -48,33 +48,32 @@ class CallbackProcess(Process):
             value = getattr(self, key)
             if not callable(value):
                 continue
-            name = name_match.group('name').upper()
-            attr = name_match.groupdict().get('attr')
-            attr = '' if attr is None else attr
+            name = name_match.group("name").upper()
+            attr = name_match.groupdict().get("attr")
+            attr = "" if attr is None else attr
             attr = attr.upper()
             self._event_handlers[(name, attr)] = value
         print(self._event_handlers.keys())
 
-    def _dispatch_events(self, block = True, timeout = None):
+    def _dispatch_events(self, block=True, timeout=None):
         events: list[PickableEvent] = self._event_q.get(block, timeout)
-        # print("DISPATCH EVENTS: ", [(event.type_name, event.attrs) for event in events])
         for event in events:
             handler = None
             name = event.type_name.upper()
-            attr = ''
+            attr = ""
             if event.type in (KEYDOWN, KEYUP):
-                attr = key_name(event.attrs['key']).replace(' ', '_').upper()
-                event.attrs['key_name'] = attr
+                attr = key_name(event.attrs["key"]).replace(" ", "_").upper()
+                event.attrs["key_name"] = attr
             elif event.type in (MOUSEBUTTONDOWN, MOUSEBUTTONUP):
-                attr = str(event.attrs['button'])
+                attr = str(event.attrs["button"])
             elif event.type == MOUSEMOTION:
-                attr = ''
+                attr = ""
             handler = self._event_handlers.get((name, attr), None)
             if handler is None:
-                handler = self._event_handlers.get((name, ''), None)
+                handler = self._event_handlers.get((name, ""), None)
             if handler is not None:
                 handler(event.attrs)
-    
+
     def draw(self, buffer: Buffer):
         entry = []
         new_dots = []
@@ -88,7 +87,7 @@ class CallbackProcess(Process):
                     new_dots.append((hash_value, plain_dot))
                     self._registered_hashes.add(hash_value)
                 entry.append(hash_value)
-        
+
         if len(new_dots) > 0:
             self._msg_q.put(ACTION_MSG.REGISTER_DOTS)
             self._data_q.put(new_dots)

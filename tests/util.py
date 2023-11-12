@@ -14,9 +14,9 @@ class Timer:
         for i in range(self.number):
             (self.func)(i)
         self.delta = time.time() - self.start_time
-        self.average = self.delta/self.number
+        self.average = self.delta / self.number
         return self
-    
+
     @property
     def stats(self) -> str:
         return f"(delta: {self.delta:.2}s average: {self.average:.2}s)"

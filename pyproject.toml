@@ -7,3 +7,8 @@ dependencies = [
 
 [tool.setuptools]
 packages = ["VXTool", "VXTool_template"]
+
+[tool.ruff]
+extend-select = ["I"]
+exclude = ["VXTool_template"]
+fix = true

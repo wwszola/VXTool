@@ -3,7 +3,7 @@
 
 Based on PyGame. Recording uses system call `ffmpeg` for stitching frames into video, but it's not needed for rendering `.png` images.
 
-## Windows | Use source code in a virtual environment 
+## Windows | Use source code in a virtual environment
 ```
 py -m venv venv
 venv/Scripts/activate
@@ -17,7 +17,7 @@ pip install build
 py -m build
 ```
 ### Install the wheel
-Building the package with `build` tool creates a `dist` directory containing files `VXTool-0.1.tar.gz`, `VXTool-0.1-py3-none-any.whl`. Install using pip specyfing `.whl` file. 
+Building the package with `build` tool creates a `dist` directory containing files `VXTool-0.1.tar.gz`, `VXTool-0.1-py3-none-any.whl`. Install using pip specyfing `.whl` file.
 
 
 ### Running tests
@@ -35,8 +35,8 @@ py -m VXTool ./path/to_the_new/project/ create
 A font file `UniVGA16.ttf` is provided in the template project. \
 You may add your `*.ttf` font into the project directory and specify its name in `settings.json` under `["APP"]["preload_fonts"]`.
 
-### UniVGA16 font 
-Template project and examples contain `UniVGA16.ttf` font file. The file originally can be accessed [here](https://github.com/mirror/reactos/blob/c6d2b35ffc91e09f50dfb214ea58237509329d6b/reactos/media/fonts/UniVGA16.ttf) under attached [license](https://github.com/mirror/reactos/tree/master/reactos/media/fonts/doc/UniVGA). Originally created by [Dmitry Bolkhovityanov](https://www.inp.nsk.su/~bolkhov/files/fonts/univga/). The font is also a part of [reactOS](https://reactos.org/). 
+### UniVGA16 font
+Template project and examples contain `UniVGA16.ttf` font file. The file originally can be accessed [here](https://github.com/mirror/reactos/blob/c6d2b35ffc91e09f50dfb214ea58237509329d6b/reactos/media/fonts/UniVGA16.ttf) under attached [license](https://github.com/mirror/reactos/tree/master/reactos/media/fonts/doc/UniVGA). Originally created by [Dmitry Bolkhovityanov](https://www.inp.nsk.su/~bolkhov/files/fonts/univga/). The font is also a part of [reactOS](https://reactos.org/).
 
 ## Guide
 ### Shortcuts
@@ -53,12 +53,12 @@ ___
 ## General notes
 - Main spawns App and Callback
 #### What is sent through render queue
-- Callback doesn't send whole buffer, only pos and hash list 
+- Callback doesn't send whole buffer, only pos and hash list
 - Hash to Dot dict being held by TextRender.
 - Callback holds its own hash to dot and sends updates
 #### Diff idea
 - Slow.
-- TextRender has internal Buffer. 
+- TextRender has internal Buffer.
 - Callback submits a diff to the queue, TextRender blits needed dots.
 #### Sync
 - App gathers events every window frame, while displaying last available TextRender surface.
@@ -109,7 +109,7 @@ ___
 - cleaning up util ( constistency, remember about pygame Vector and Rect)
 ### Sync
 - (__didnt try not waiting__) Callback chooses to wait or not for new InputFrame.
-- widget discards callback frames up to the last one if their counters don't match 
+- widget discards callback frames up to the last one if their counters don't match
 - __Moving__ the window causes to crash because of some blocking timeout?
 
 ### Ideas
@@ -117,4 +117,4 @@ ___
 - - pause/play/reload
 - Live music performance:
 - - spectral analysis
-- - midi input 
+- - midi input
