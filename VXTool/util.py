@@ -109,32 +109,35 @@ def grid_seq(shape: tuple[int, int], origin: tuple[int, int] = (0, 0)) -> Genera
             yield (x, y)
 
 
-def circle_seq(center: tuple[int, int], radius: int) -> Generator:
-    def ends(half_chord: float):
-        x_left = round(center[0] - half_chord)
-        x_right = round(center[0] + half_chord)
-        return x_left, x_right
+def _circle_octant_symmetry(x: int, y: int):
+    yield from ((x, y), (x, -y), (-x, y), (-x, -y), (y, x), (y, -x), (-y, x), (-y, -x))
 
-    center = round(center[0]), round(center[1])
-    radius = radius
-    r_sq = radius**2
-    caps_r = 0
-    for d in range(1, radius):
-        half_chord = sqrt(r_sq - d**2)
-        x_left, x_right = ends(half_chord)
-        for y in (center[1] - d, center[1] + d):
-            yield from line_seq((x_left, y), (x_right, y))
 
-        if x_right - x_left == 2 * radius:
-            caps_r += 1
+def midpoint_circle(center: tuple[int, int], radius: int):
+    p = (5 - 4 * radius) // 4
+    x = 0
+    y = radius
+    while x <= y:
+        yield from (
+            (x + center[0], y + center[1]) for x, y in _circle_octant_symmetry(x, y)
+        )
+        x = x + 1
+        p += 2 * x + 1
+        if p >= 0:
+            y = y - 1
+            p -= 2 * y
 
-    x_left, x_right = ends(caps_r)
-    for y in (center[1] - radius, center[1] + radius):
-        yield from line_seq((x_left, y), (x_right, y))
 
-    x_left, x_right = ends(radius)
-    y = center[1]
-    yield from line_seq((x_left, y), (x_right, y))
+def scanline_circle(center: tuple[int, int], radius: int):
+    x = 0
+    y = radius
+    radius_sq = radius * radius
+    while x <= y:
+        y = round(sqrt(radius_sq - x * x))
+        yield from (
+            (x + center[0], y + center[1]) for x, y in _circle_octant_symmetry(x, y)
+        )
+        x = x + 1
 
 
 def polygon_seq(
