@@ -1,6 +1,6 @@
 from VXTool.callback import CallbackProcess
 from VXTool.core import Buffer, Color, Dot
-from VXTool.util import grid_seq
+from VXTool.util.picture import rect_fill
 
 from .settings import CONFIG, colors
 
@@ -16,7 +16,7 @@ class Callback(CallbackProcess):
         )
 
         self.screen = Buffer()
-        self.grid = list(grid_seq(CONFIG["shape"]))
+        self.grid = list(rect_fill(CONFIG["shape"]))
 
     def update(self):
         self.clear()

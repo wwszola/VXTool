@@ -1,6 +1,7 @@
 from VXTool.callback import CallbackProcess
 from VXTool.core import Buffer, Color, Dot
-from VXTool.util import line_seq, words_line
+from VXTool.util.picture import dda_line
+from VXTool.util.text import words_line
 
 from .settings import colors
 
@@ -58,7 +59,7 @@ class Callback(CallbackProcess):
         layer3.extend(
             (
                 self.base_dot.variant(pos=pos, color=colors["GREEN"])
-                for pos in line_seq(P1, P2)
+                for pos in dda_line(P1, P2)
             )
         )
 

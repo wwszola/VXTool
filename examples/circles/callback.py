@@ -1,6 +1,6 @@
 from VXTool.callback import CallbackProcess
 from VXTool.core import Buffer, Color, Dot
-from VXTool.util import midpoint_circle, scanline_circle
+from VXTool.util.picture import midpoint_circle, scanline_circle
 
 from .settings import CONFIG
 
