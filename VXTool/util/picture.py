@@ -1,6 +1,8 @@
 from math import cos, pi, sin, sqrt
 from typing import Callable
 
+from .transform import translate
+
 
 def dda_line(p1: tuple[float, float], p2: tuple[float, float], end: int = 1):
     dx, dy = p2[0] - p1[0], p2[1] - p1[1]
@@ -26,14 +28,28 @@ def _circle_octant_symmetry(x: int, y: int):
     yield from ((x, y), (x, -y), (-x, y), (-x, -y), (y, x), (y, -x), (-y, x), (-y, -x))
 
 
+def _circle_quadrant_symmetry(x: int, y: int):
+    yield from ((x, y), (x, -y), (-x, y), (-x, -y))
+
+
+def _circle_rotational_symmetry(x: int, y: int):
+    yield from ((x, y), (-x, -y), (-y, x), (y, -x))
+
+
 def midpoint_circle(center: tuple[int, int], radius: int):
+    if radius == 0:
+        yield center
+        return
     p = (5 - 4 * radius) // 4
     x = 0
     y = radius
     while x <= y:
-        yield from (
-            (x + center[0], y + center[1]) for x, y in _circle_octant_symmetry(x, y)
-        )
+        if x == 0 or x == y:
+            yield from (
+                translate(pos, center) for pos in _circle_rotational_symmetry(x, y)
+            )
+        else:
+            yield from (translate(pos, center) for pos in _circle_octant_symmetry(x, y))
         x = x + 1
         p += 2 * x + 1
         if p >= 0:
@@ -42,15 +58,21 @@ def midpoint_circle(center: tuple[int, int], radius: int):
 
 
 def scanline_circle(center: tuple[int, int], radius: int):
+    if radius == 0:
+        yield center
+        return
+    radius_sq = radius * radius
     x = 0
     y = radius
-    radius_sq = radius * radius
     while x <= y:
-        y = round(sqrt(radius_sq - x * x))
-        yield from (
-            (x + center[0], y + center[1]) for x, y in _circle_octant_symmetry(x, y)
-        )
+        if x == 0 or x == y:
+            yield from (
+                translate(pos, center) for pos in _circle_rotational_symmetry(x, y)
+            )
+        else:
+            yield from (translate(pos, center) for pos in _circle_octant_symmetry(x, y))
         x = x + 1
+        y = round(sqrt(radius_sq - x * x))
 
 
 def polygon(n: int, center: tuple[int, int], radius: int, offset: float = 0.0):
