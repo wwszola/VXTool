@@ -6,7 +6,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["VXTool", "VXTool_template"]
+packages = ["VXTool", "VXTool.util", "VXTool_template"]
 
 [tool.ruff]
 extend-select = ["I"]
